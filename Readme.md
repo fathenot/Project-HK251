@@ -14,5 +14,5 @@ Mặc định backend chạy ở http://localhost:8080
 cd Backend
 .\mvnw.cmd spring-boot:run
 
-### Khi lấy source code thì nhớ lấy từ nhánh branch
-git clone -b develop git@github.com:username/Project-HK251.git
+### Khi lấy source code thì nhớ lấy từ nhánh develop
+git clone -b develop git@github.com:fathenot/Project-HK251.git
