@@ -1,0 +1,118 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]    
+
+jobs:
+  # =============================
+  # Backend job (Spring Boot)
+  # =============================
+  backend-build:
+    name: Backend - Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build with Maven
+        run: mvn -B clean package --file pom.xml
+
+      - name: Run tests
+        run: mvn test
+
+  backend-deploy:
+    name: Backend - Deploy
+    needs: backend-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build JAR
+        run: mvn -B clean package -DskipTests --file pom.xml
+
+      - name: Deploy to Server (SSH)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            mkdir -p ~/app
+            cd ~/app
+            pkill -f 'java -jar' || true
+            rm -f app.jar
+            cp target/*.jar app.jar
+            nohup java -jar app.jar > app.log 2>&1 &
+
+  # =============================
+  # Frontend job (Vue + Vite)
+  # =============================
+  frontend-deploy:
+    name: Frontend - Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref =='refs/heads/develop'  # chỉ deploy frontend khi merge vào main hoặc develop
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: Frontend
+
+      - name: Build project
+        run: npm run build
+        working-directory: Frontend
+
+      - name: Upload production-ready build files
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: Frontend/dist
+
+  frontend-publish:
+    name: Frontend - Publish GitHub Pages
+    needs: frontend-deploy
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
