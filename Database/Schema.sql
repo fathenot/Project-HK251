@@ -2,8 +2,8 @@
 -- DATABASE SCHEMA (MySQL)
 -- =========================
 CREATE DATABASE IF NOT EXISTS supermarket_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-
 USE supermarket_db;
+
 CREATE TABLE customers (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
 first_name VARCHAR(100),
@@ -137,47 +137,40 @@ ADD CONSTRAINT fk_stores_manager FOREIGN KEY (manager_id) REFERENCES sales_emplo
 ALTER TABLE warehouses
 ADD CONSTRAINT fk_warehouses_manager FOREIGN KEY (manager_id) REFERENCES warehouse_employees(employee_id) ON DELETE SET NULL;
 
-CREATE TABLE warehouse_imports (
-details_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-warehouse_id BIGINT NOT NULL,
-employee_id BIGINT NOT NULL,
-PRIMARY KEY (details_id, warehouse_id),
-CONSTRAINT fk_warehouse_imports_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
-CONSTRAINT fk_warehouse_imports_employee FOREIGN KEY (employee_id) REFERENCES employees(id),
-CONSTRAINT fk_warehouse_imports_employee FOREIGN KEY (details_id) REFERENCES warehouse_imports_details(details_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE batches_imported (
+    batch_import_id BIGINT PRIMARY KEY ,
+    import_details_id BIGINT NOT NULL ,
+    quantity INT NOT NULL,
+    CONSTRAINT fk_import_details FOREIGN KEY (import_details_id) REFERENCES warehouse_imports_details(details_id)
+) ENGINE = InnoDB;
 
-CREATE TABLE warehouse_exports (
-warehouse_id BIGINT NOT NULL,
-employee_id BIGINT NOT NULL,
-details_id BIGINT NOT NULL,
-PRIMARY KEY (details_id, warehouse_id),
-CONSTRAINT fk_warehouse_exports_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
-CONSTRAINT fk_warehouse_exports_employee FOREIGN KEY (employee_id) REFERENCES employees(id)
-CONSTRAINT fk_warehouse_exports_employee FOREIGN KEY (id) REFERENCES warehouse_exports_details(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE batches_exported(
+    batch_export_id BIGINT PRIMARY KEY ,
+    export_details_id BIGINT NOT NULL ,
+    quantity INT NOT NULL,
+    CONSTRAINT FOREIGN KEY (export_details_id) REFERENCES warehouse_exports_details(details_id)
+) ENGINE = InnoDB;
 
 CREATE TABLE warehouse_exports_details (
 details_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-batch_id BIGINT NOT NULL,
-quantity INT NOT NULL,
 reason VARCHAR(255),
+employee_export BIGINT,
 export_date TIMESTAMP NOT NULL DEFAULT NOW(),
-CONSTRAINT fk_warehouse_exports_details_export FOREIGN KEY (export_id) REFERENCES warehouse_exports(id),
-CONSTRAINT fk_warehouse_exports_details_batch FOREIGN KEY (batch_id) REFERENCES batches(id
+warehouse_id bigint not null,
+CONSTRAINT FOREIGN KEY (employee_export) REFERENCES warehouse_employees(employee_id) ON DELETE RESTRICT,
+CONSTRAINT FOREIGN KEY (warehouse_id) REFERENCES  warehouses(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE warehouse_imports_details (
 details_id BIGINT PRIMARY KEY AUTO_INCREMENT,
-batch_id BIGINT NOT NULL,
-quantity INT NOT NULL,
 supplier VARCHAR(255),
 import_date TIMESTAMP NOT NULL DEFAULT NOW(),
 unit_price DECIMAL(10,2) NOT NULL,
-PRIMARY KEY (import_id, batch_id),
-CONSTRAINT fk_warehouse_imports_details_import FOREIGN KEY (import_id) REFERENCES warehouse_imports(id),
-CONSTRAINT fk_warehouse_imports_details_batch FOREIGN KEY (batch_id) REFERENCES batches(id)
+employee_import BIGINT,
+warehouse_id bigint not null,
+CONSTRAINT FOREIGN KEY (employee_import) REFERENCES  warehouse_employees(employee_id) ON DELETE RESTRICT,
+CONSTRAINT FOREIGN KEY (warehouse_id) REFERENCES warehouses(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================
--- END OF DATABASE SCHEMA   
+-- END OF DATABASE SCHEMA
