@@ -1,3 +1,6 @@
+USE supermarket_db;
+DELIMITER $$
+USE supermarket_db;
 DELIMITER $$
 
 CREATE PROCEDURE sp_import_goods(
@@ -5,15 +8,18 @@ CREATE PROCEDURE sp_import_goods(
     IN p_warehouse_id BIGINT,
     IN p_supplier VARCHAR(255),
     IN p_unit_price DECIMAL(10,2),
-    IN p_items_json JSON  -- [{"variant_id":1,"quantity":50}, ...]
+    IN p_items_json JSON  -- [{"product_id":101,"product_name":"Bánh quy","variant_json":{"Size":"M","Color":"Red"},"quantity":50}, ...]
 )
 BEGIN
     DECLARE v_import_id BIGINT;
     DECLARE v_variant_id BIGINT;
     DECLARE v_product_id BIGINT;
+    DECLARE v_product_name VARCHAR(255);
+    DECLARE v_variant_json JSON;
     DECLARE v_quantity INT;
     DECLARE v_batch_id BIGINT;
     DECLARE v_done INT DEFAULT FALSE;
+    DECLARE v_exists INT;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -31,10 +37,16 @@ BEGIN
 
     -- 2. Duyệt JSON nhập
     DECLARE cur CURSOR FOR
-    SELECT variant_id, quantity
+    SELECT 
+        product_id, 
+        product_name, 
+        variant_json, 
+        quantity
     FROM JSON_TABLE(p_items_json, '$[*]'
         COLUMNS (
-            variant_id BIGINT PATH '$.variant_id',
+            product_id BIGINT PATH '$.product_id',
+            product_name VARCHAR(255) PATH '$.product_name',
+            variant_json JSON PATH '$.variant_json',
             quantity INT PATH '$.quantity'
         )) AS jt;
 
@@ -43,13 +55,28 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_variant_id, v_quantity;
+        FETCH cur INTO v_product_id, v_product_name, v_variant_json, v_quantity;
         IF v_done THEN LEAVE read_loop; END IF;
 
-        -- Lấy product_id từ variant
-        SELECT product_id INTO v_product_id FROM product_variants WHERE id = v_variant_id;
+        -- 2a. Tạo product nếu chưa tồn tại
+        SELECT COUNT(*) INTO v_exists FROM products WHERE id = v_product_id;
+        IF v_exists = 0 THEN
+            INSERT INTO products(id, name, price) VALUES (v_product_id, v_product_name, p_unit_price);
+        END IF;
 
-        -- Kiểm tra batch tồn tại chưa trong kho
+        -- 2b. Kiểm tra variant đã tồn tại chưa
+        SELECT id INTO v_variant_id 
+        FROM product_variants 
+        WHERE product_id = v_product_id AND variant_json = v_variant_json
+        LIMIT 1;
+
+        IF v_variant_id IS NULL THEN
+            -- Tạo variant mới
+            INSERT INTO product_variants(product_id, variant_json) VALUES (v_product_id, v_variant_json);
+            SET v_variant_id = LAST_INSERT_ID();
+        END IF;
+
+        -- 2c. Kiểm tra batch tồn tại chưa trong kho
         SELECT id INTO v_batch_id
         FROM batches
         WHERE variant_id = v_variant_id AND warehouse_id = p_warehouse_id
@@ -188,6 +215,32 @@ BEGIN
     CLOSE cur;
 
     COMMIT;
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE FUNCTION fn_variant_exists(
+    p_keyword VARCHAR(255),
+    p_variant_filter JSON,
+    p_warehouse_id BIGINT
+)
+RETURNS BOOLEAN
+DETERMINISTIC
+BEGIN
+    DECLARE v_count INT;
+
+    SELECT COUNT(*) INTO v_count
+    FROM product_variants pv
+    JOIN products p ON pv.product_id = p.id
+    JOIN batches b ON b.variant_id = pv.id
+    WHERE p.name LIKE CONCAT('%', p_keyword, '%')
+      AND b.warehouse_id = p_warehouse_id
+      AND b.quantity_available > 0
+      AND (p_variant_filter IS NULL OR JSON_CONTAINS(pv.variant_json, p_variant_filter));
+
+    RETURN v_count > 0;
 END$$
 
 DELIMITER ;
