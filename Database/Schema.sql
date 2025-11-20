@@ -28,7 +28,7 @@ name VARCHAR(255) NOT NULL,
 description TEXT,
 price DECIMAL(10,2) NOT NULL,
 SKU VARCHAR(100) UNIQUE,
-image VARCHAR(255)
+barcode VARCHAR(255) UNIQUE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE cart_items (
@@ -63,8 +63,7 @@ CONSTRAINT fk_order_details_product FOREIGN KEY (product_id) REFERENCES products
 CREATE TABLE product_variants (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
 product_id BIGINT NOT NULL,
-attribute VARCHAR(100) NOT NULL COMMENT 'Ví dụ: Color, Size',
-value VARCHAR(100) NOT NULL COMMENT 'Ví dụ: Red, S, M, L',
+variant_json JSON,        -- {"Size":"M","Color":"Red"}
 CONSTRAINT fk_product_variants_product FOREIGN KEY (product_id) REFERENCES products(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -84,6 +83,7 @@ manager_id BIGINT UNIQUE
 
 CREATE TABLE batches (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
+variant_id BIGINT NOT NULL,
 product_id BIGINT NOT NULL,
 warehouse_id BIGINT NOT NULL,
 manufacture VARCHAR(255),
@@ -93,7 +93,8 @@ quantity_available INT NOT NULL,
 create_date DATE,
 expiry_date DATE,
 CONSTRAINT fk_batches_product FOREIGN KEY (product_id) REFERENCES products(id),
-CONSTRAINT fk_batches_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id)
+CONSTRAINT fk_batches_warehouse FOREIGN KEY (warehouse_id) REFERENCES warehouses(id),
+CONSTRAINT fk_batches_variant FOREIGN KEY (variant_id) REFERENCES product_variants(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE product_stores (
