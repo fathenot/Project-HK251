@@ -6,6 +6,5 @@ import com.example.demo.infrastructure.DatabaseConnector;
 
 @Repository
 public class CustomerRepo {
-    private final DatabaseConnector databaseConnector = new DatabaseConnector();
 
 }

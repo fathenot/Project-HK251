@@ -12,6 +12,5 @@ import com.example.demo.infrastructure.*;
 // có thể thêm các phương thức khác như save, update, delete, findAll, v.v.
 @Repository
 public class OrderRepo {
-    private final DatabaseConnector databaseConnector = new DatabaseConnector();
-
+    final DatabaseConnector dbConnector = new DatabaseConnector();
 }
