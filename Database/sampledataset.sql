@@ -1,85 +1,149 @@
- USE supermarket_db;
-INSERT INTO stores (id, name, location)
-VALUES
-(1, 'Supermart District 1', 'HCM - District 1'),
-(2, 'Supermart District 7', 'HCM - District 7');
+use supermarket_db;
 
-INSERT INTO warehouses (id, name, location)
-VALUES
-(2, 'Central Warehouse', 'HCM - Thu Duc'),
-(3, 'South Warehouse', 'HCM - Binh Chanh');
+-- Nhân viên
+INSERT INTO employees(username, password, first_name, last_name)
+VALUES ('nv_test','pass','Nguyen','Van A');
+
+-- Kho
+INSERT INTO warehouses(name, location) VALUES ('Kho HCM', 'HCM');
+
+INSERT INTO warehouse_employees VALUES(1,1);
+
+-- Lấy id để test
+SET @employee_id = (SELECT id FROM employees LIMIT 1);
+SET @warehouse_id = (SELECT id FROM warehouses LIMIT 1);
+SET @supplier = 'Vinamilk';
+SET @unit_price = 20000;
+
+SET @test_json = '[
+  {
+    "product_id": 1,
+    "product_name": "Sữa Vinamilk 330ml",
+    "description": "Sữa tiệt trùng 330ml",
+    "sku": "VINAMILK-330",
+    "barcode": "8931234567330",
+    "variant_json": {"Size":"330ml","Pack":"Hộp"},
+    "quantity": 50,
+    "manufacture": "2025-10-01",
+    "expiry_date": "2026-04-01"
+  },
+  {
+    "product_id": 1,
+    "product_name": "Sữa Vinamilk 500ml",
+    "description": "Sữa tiệt trùng 500ml",
+    "sku": "VINAMILK-500",
+    "barcode": "8931234567500",
+    "variant_json": {"Size":"500ml","Pack":"Hộp"},
+    "quantity": 30,
+    "manufacture": "2025-10-05",
+    "expiry_date": "2026-04-05"
+  },
+  {
+    "product_id": 2,
+    "product_name": "Nước ép cam 250ml",
+    "description": "Nước ép cam nguyên chất 250ml",
+    "sku": "ORANGE-JUICE-250",
+    "barcode": "8938888888250",
+    "variant_json": {"Size":"250ml","Pack":"Chai"},
+    "quantity": 20,
+    "manufacture": "2025-10-10",
+    "expiry_date": "2026-03-10"
+  }
+]';
 
 
-INSERT INTO employees(id, username, password, first_name, last_name)
-VALUES
-(1, 'manager1', 'pass', 'Alice', 'Nguyen'),
-(2, 'sale1', 'pass', 'Bob', 'Tran'),
-(3, 'ware1', 'pass', 'Charlie', 'Le');
+CALL sp_create_import(@employee_id, @warehouse_id, @supplier, @unit_price, @import_id);
+SELECT @import_id;
+SELECT * FROM warehouse_imports_details WHERE details_id = @import_id;
 
-INSERT INTO sales_employees (employee_id, store_id, total_sales)
-VALUES
-(2, 1, 0);
+CALL sp_insert_products(@test_json, @unit_price);
+SELECT * FROM products;
 
-INSERT INTO warehouse_employees (employee_id, warehouse_id)
-VALUES
-(3, 1);
+CALL sp_insert_variants(@test_json);
+SELECT * FROM product_variants;
 
-UPDATE stores SET manager_id = 2 WHERE id = 1;
-UPDATE warehouses SET manager_id = 3 WHERE id = 1;
+-- Giả lập batch đã có sẵn để test update
+INSERT INTO batches(variant_id, product_id, warehouse_id, supplier, quantity_total, quantity_available, create_date)
+SELECT id, product_id, @warehouse_id, @supplier, 10, 10, NOW()
+FROM product_variants
+WHERE id = 1;
 
-INSERT INTO products (id, name, description, price, SKU)
-VALUES
-(1, 'Milk 1L', 'Fresh milk', 30000, 'MLK-1L'),
-(2, 'Instant Noodles', 'Beef flavor', 7000, 'NOOD-BF'),
-(3, 'Shampoo 500ml', 'Herbal shampoo', 65000, 'SHMP-500');
+CALL sp_update_batches(@test_json, @warehouse_id);
+SELECT * FROM batches;
 
-INSERT INTO product_variants (id, product_id, attribute, value)
-VALUES
-(1, 1, 'Fat', 'Low-fat'),
-(2, 1, 'Package', 'Bottle'),
-(3, 2, 'Size', '80g'),
-(4, 3, 'Scent', 'Herbal');
+CALL sp_insert_new_batches(@test_json, @warehouse_id, @supplier);
+SELECT * FROM batches;
 
-INSERT INTO warehouse_imports_details(details_id, supplier, unit_price, employee_import, warehouse_id)
-VALUES
-(1, 'DairyCorp', 25000, 3, 1),
-(2, 'FoodSupply', 5000, 3, 1);
+CALL sp_log_batches_imported(@test_json, @warehouse_id, @import_id);
+SELECT * FROM batches_imported;
 
-INSERT INTO batches_imported(batch_import_id, import_details_id, quantity)
-VALUES
-(1001, 1, 100),
-(1002, 2, 300);
 
-INSERT INTO batches
-(id, product_id, warehouse_id, manufacture, supplier, quantity_total, quantity_available, create_date, expiry_date)
-VALUES
-(1, 1, 1, 'Vinamilk', 'DairyCorp', 100, 100, '2025-01-01', '2025-12-31'),
-(2, 2, 1, 'AceCook', 'FoodSupply', 300, 300, '2025-01-10', '2026-01-10');
 
-INSERT INTO product_stores (product_id, store_id, quantity_in_stock)
-VALUES
-(1, 1, 20),
-(2, 1, 50),
-(3, 1, 15);
 
-INSERT INTO customers(id, first_name, last_name, email, phone, address)
-VALUES
-(1, 'Tien', 'Pham', 'tien@example.com', '0900000000', 'HCM');
+SET @export_reason = 'Xuất bán hàng';
+CALL sp_create_export(@employee_id, @warehouse_id, @export_reason, @export_id);
+SELECT * FROM warehouse_exports_details WHERE details_id = @export_id;
 
-INSERT INTO carts(id, customer_id)
-VALUES
-(1, 1);
+-- =============================
+-- 2️⃣ Lấy batch để xuất
+-- =============================
+CALL sp_select_batches_for_export(@warehouse_id, 0, 0); -- tất cả sản phẩm và variant
+-- Chọn 1 batch để test log
+SET @batch_id_1 = (SELECT id FROM batches WHERE warehouse_id = @warehouse_id LIMIT 1);
+SELECT @batch_id_1;
+-- =============================
+-- 3️⃣ Ghi log batch xuất
+-- =============================
+-- Xuất 5 sản phẩm từ batch đầu tiên
+CALL sp_log_batches_exported(@export_id, @batch_id_1, 5);
+-- Xuất tiếp batch thứ 2 nếu có
+SET @batch_id_2 = (SELECT id FROM batches WHERE warehouse_id = @warehouse_id AND id != @batch_id_1 LIMIT 1);
+SELECT id FROM batches WHERE warehouse_id = @warehouse_id AND id != @batch_id_1 LIMIT 1;
+-- Xem giá trị batch_id_2
+SELECT @batch_id_2 AS batch_id_2;
+CALL sp_log_batches_exported(@export_id, @batch_id_2, 10);
 
-INSERT INTO cart_items (cart_id, product_id, quantity, sub_total)
-VALUES
-(1, 1, 2, 60000),
-(1, 2, 5, 35000);
+-- Kiểm tra trạng thái batch sau khi xuất
+SELECT * FROM batches WHERE warehouse_id = @warehouse_id;
 
-INSERT INTO orders (id, customer_id, total_money)
-VALUES
-(1, 1, 95000);
+-- Kiểm tra log batch xuất
+SELECT * FROM batches_exported WHERE export_details_id = @export_id;
 
-INSERT INTO order_details(order_id, product_id, quantity, sub_total)
-VALUES
-(1, 1, 2, 60000),
-(1, 2, 5, 35000);
+-- =============================
+-- 4️⃣ Xuất JSON tổng hợp
+-- =============================
+CALL sp_export_warehouse_batches(@export_id);
+-- =============================
+-- 4. Test fn_variant_exists
+-- =============================
+
+-- Kiểm tra tồn tại variant theo warehouse và filter JSON
+SELECT fn_variant_exists("Sữa Vinamilk", '{"Size":"330ml"}', 1) AS exists_330ml;
+SELECT fn_variant_exists("Sữa Vinamilk", '{"Size":"500ml"}', 1) AS exists_500ml;
+SELECT fn_variant_exists("Sữa Vinamilk", '{"Size":"1L"}', 1) AS exists_1L;  -- FALSE
+
+-- Tắt kiểm tra FK
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- Xóa dữ liệu từ tất cả bảng
+TRUNCATE TABLE batches_imported;
+TRUNCATE TABLE batches_exported;
+TRUNCATE TABLE warehouse_exports_details;
+TRUNCATE TABLE warehouse_imports_details;
+TRUNCATE TABLE batches;
+TRUNCATE TABLE product_variants;
+TRUNCATE TABLE products;
+TRUNCATE TABLE cart_items;
+TRUNCATE TABLE carts;
+TRUNCATE TABLE orders;
+TRUNCATE TABLE order_details;
+TRUNCATE TABLE customers;
+TRUNCATE TABLE product_stores;
+TRUNCATE TABLE sales_employees;
+TRUNCATE TABLE warehouse_employees;
+TRUNCATE TABLE employees;
+TRUNCATE TABLE stores;
+TRUNCATE TABLE warehouses;
+
+-- Bật lại kiểm tra FK
+SET FOREIGN_KEY_CHECKS = 1;
