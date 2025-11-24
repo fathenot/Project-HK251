@@ -1,4 +1,6 @@
 package com.example.demo.entity;
+import com.example.demo.entity.compositePK.CartItemID;
+
 import jakarta.persistence.*;
 
 
@@ -34,7 +36,7 @@ public class CartItem {
         this.subtotal = subtotal;
     }
 
-    public long CartID(){return cartID;}
+    public long getCartID(){return cartID;}
     public long getProductID(){return productID;}
     public int getQuantity(){return quantity;}
     public float getSubtotal(){return subtotal;}

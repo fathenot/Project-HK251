@@ -39,7 +39,7 @@ public class Customer {
         this.loyaltyPt = loyaltyPt;
     }
     
-    public int getId(){return id;}
+    public int getID(){return id;}
     public String getFirstName(){return firstName;}
     public String getLastName(){return lastName;}
     public String getEmail(){return email;}

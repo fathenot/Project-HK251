@@ -1,12 +1,14 @@
 package com.example.demo.entity;
 
 import java.time.LocalDate;
+
+import com.example.demo.entity.utility.DateTimeUtils;
+
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "batches")
 public class Batch {
-    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;

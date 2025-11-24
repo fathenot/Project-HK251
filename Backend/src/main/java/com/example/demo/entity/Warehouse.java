@@ -33,7 +33,7 @@ public class Warehouse {
         this.location = location;
         this.managerID = managerID;
     }    
-    public long getId(){return id;}
+    public long getID(){return id;}
     public String getName(){return name;}
     public String getLocation(){return location;}
     public Long getManagerID(){return managerID;}

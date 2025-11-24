@@ -1,4 +1,6 @@
 package com.example.demo.entity;
+import com.example.demo.entity.compositePK.OrderDetailID;
+
 import jakarta.persistence.*;
 
 @Entity

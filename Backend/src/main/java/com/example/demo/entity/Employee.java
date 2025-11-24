@@ -2,6 +2,8 @@ package com.example.demo.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
+import com.example.demo.entity.utility.DateTimeUtils;
+
 @Entity
 @Table(name = "employees")
 public class Employee {
@@ -56,6 +58,6 @@ public class Employee {
     public String getPassword(){return password;}
     public String getFirstName(){return firstName;}
     public String getLastName(){return lastName;}
-    public LocalDate getHiredDate(){return hiredAt;}
+    public LocalDate getHireDate(){return hiredAt;}
     public Long getManagerID(){return managerID;}
 }

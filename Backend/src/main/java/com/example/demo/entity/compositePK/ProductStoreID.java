@@ -1,4 +1,4 @@
-package com.example.demo.entity;
+package com.example.demo.entity.compositePK;
 import java.io.Serializable;
 import java.util.Objects;
 

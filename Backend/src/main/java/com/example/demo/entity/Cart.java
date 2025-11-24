@@ -3,6 +3,8 @@ import java.time.LocalDateTime;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import com.example.demo.entity.utility.DateTimeUtils;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -33,14 +35,14 @@ public class Cart {
 +-------------+-----------+------+-----+-------------------+-------------------+
 */
     public Cart(){}
-    public Cart(int id, int cid, String create, String update){
+    public Cart(int id, int customerID, String createDatetime_str, String updateDatetime_str){
         this.id = id;
-        this.customerID = cid;
-        this.createdAt = DateTimeUtils.createDatetime(create);
-        this.updatedAt = DateTimeUtils.createDatetime(update);
+        this.customerID = customerID;
+        this.createdAt = DateTimeUtils.createDatetime(createDatetime_str);
+        this.updatedAt = DateTimeUtils.createDatetime(updateDatetime_str);
     }
     public long getID(){return id;}
     public long getCustomerID(){return customerID;}
-    public LocalDateTime getCreatedTime(){return createdAt;}
-    public LocalDateTime getUpdatedTime(){return updatedAt;}
+    public LocalDateTime getCreateTime(){return createdAt;}
+    public LocalDateTime getUpdateTime(){return updatedAt;}
 }
