@@ -14,13 +14,13 @@ const routes = [
     component: () => import('@/views/LoginView.vue'),
   },
 
-  // // Register
-  // {
-  //   path: '/register',
-  //   name: 'register',
-  //   meta: { title: 'Register' },
-  //   component: () => import('@/views/RegisterView.vue'),
-  // },
+  // Register
+  {
+    path: '/register',
+    name: 'register',
+    meta: { title: 'Register' },
+    component: () => import('@/views/RegisterView.vue'),
+  },
 
   // // Manager dashboard
   // {
