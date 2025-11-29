@@ -1,7 +1,31 @@
 import { mdiAccount, mdiLogout, mdiThemeLightDark, mdiBell } from '@mdi/js'
 
 export default {
-  admin: [],
+  admin: [
+    {
+      icon: mdiBell,
+      label: 'Thông báo',
+      isDesktopNoLabel: true,
+    },
+    {
+      isCurrentUser: true,
+      menu: [
+        {
+          icon: mdiAccount,
+          label: 'Tài khoản',
+          to: '/profile',
+        },
+        {
+          isDivider: true,
+        },
+        {
+          icon: mdiLogout,
+          label: 'Đăng xuất',
+          isLogout: true,
+        },
+      ],
+    },
+  ],
   manager: [
     {
       icon: mdiBell,
@@ -52,6 +76,54 @@ export default {
       ],
     },
   ],
-  sales: [],
-  customer: [],
+  sales: [
+    {
+      icon: mdiBell,
+      label: 'Thông báo',
+      isDesktopNoLabel: true,
+    },
+    {
+      isCurrentUser: true,
+      menu: [
+        {
+          icon: mdiAccount,
+          label: 'Tài khoản',
+          to: '/profile',
+        },
+        {
+          isDivider: true,
+        },
+        {
+          icon: mdiLogout,
+          label: 'Đăng xuất',
+          isLogout: true,
+        },
+      ],
+    },
+  ],
+  customer: [
+    {
+      icon: mdiBell,
+      label: 'Thông báo',
+      isDesktopNoLabel: true,
+    },
+    {
+      isCurrentUser: true,
+      menu: [
+        {
+          icon: mdiAccount,
+          label: 'Tài khoản',
+          to: '/profile',
+        },
+        {
+          isDivider: true,
+        },
+        {
+          icon: mdiLogout,
+          label: 'Đăng xuất',
+          isLogout: true,
+        },
+      ],
+    },
+  ],
 }

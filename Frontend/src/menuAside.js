@@ -10,10 +10,22 @@ import {
   mdiAccountGroup,
   mdiAccount,
   mdiTag,
+  mdiChartBar,
+  mdiCashRegister,
+  mdiShopping,
+  mdiHistory,
+  mdiCog,
+  mdiCart,
+  mdiGift,
 } from '@mdi/js'
 
 export default {
-  admin: [],
+  admin: [
+    { to: '/admin-dashboard', icon: mdiMonitor, label: 'Tổng quan' },
+    { to: '/admin/employees', icon: mdiAccountGroup, label: 'Nhân viên' },
+    { to: '/admin/settings', icon: mdiCog, label: 'Cài đặt' },
+    { to: '/admin/logs', icon: mdiChartBar, label: 'Nhật ký' },
+  ],
 
   manager: [
     { to: '/manager-dashboard', icon: mdiMonitor, label: 'Trang chính' },
@@ -46,7 +58,14 @@ export default {
     { to: '/store-info', icon: mdiStore, label: 'Thông tin gian hàng' },
   ],
 
-  sales: [],
+  sales: [
+    { to: '/sales/pos', icon: mdiCart, label: 'Bán Hàng' },
+    { to: '/sales/search', icon: mdiDatabaseSearch, label: 'Tra Cứu' },
+    { to: '/sales/history', icon: mdiCashRegister, label: 'Lịch Sử' },
+  ],
 
-  customer: [],
+  customer: [
+    { to: '/customer/orders', icon: mdiCashRegister, label: 'Lịch Sử Mua Hàng' },
+    { to: '/customer/promotions', icon: mdiGift, label: 'Khuyến Mãi & Tích Điểm' },
+  ],
 }
