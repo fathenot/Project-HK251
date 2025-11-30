@@ -37,8 +37,11 @@ const submit = async () => {
         case 'warehouse':
           router.push('/warehouse-dashboard')
           break
+        case 'customer':
+          router.push('/customer-dashboard')
+          break
         default:
-          router.push('/dashboard')
+          router.push('/customer-dashboard')
       }
     } else {
       alert('Lỗi kết nối, vui lòng thử lại sau!')

@@ -75,13 +75,21 @@ export const useMainStore = defineStore('main', () => {
         role: username === 'warehouse' ? 'warehouse' :
               username === 'admin' ? 'admin' :
               username === 'manager' ? 'manager' :
-              username === 'sales' ? 'sales' : 'guest',
-        name: username || 'Test User',
-        email: username + '@example.com',
+              username === 'sales' ? 'sales' :
+              username === 'customer' ? 'customer' : 'customer',
+        name: username === 'admin' ? 'Nguyễn Văn Admin' :
+              username === 'manager' ? 'Trần Thị Quản Lý' :
+              username === 'sales' ? 'Trần Thị Bán Hàng' :
+              username === 'warehouse' ? 'Phạm Văn Kho' :
+              username === 'customer' ? 'Phạm Thị Khách' :
+              username || 'Test User',
+        email: username === 'sales' ? 'sales@supermarket.com' :
+               username === 'customer' ? 'customer@example.com' :
+               username + '@supermarket.com',
         phone: '0123456789',
-        address: '123 Test Street',
-        points: 100,
-        hireDate: '2022-07-01',
+        address: '123 Đường ABC, TP.HCM',
+        points: username === 'customer' ? 2450 : 0,
+        hireDate: '2023-01-15',
       }
 
       setUser(testUser)

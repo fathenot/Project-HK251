@@ -22,6 +22,90 @@ const routes = [
     component: () => import('@/views/RegisterView.vue'),
   },
 
+  // Admin routes
+  {
+    path: '/admin-dashboard',
+    name: 'admin-dashboard',
+    meta: { title: 'Trang chủ - Quản trị viên', requiresAuth: true },
+    component: () => import('@/views/admin/AdminDashboardView.vue'),
+  },
+  {
+    path: '/admin/employees',
+    name: 'admin-employees',
+    meta: { title: 'Quản lý nhân viên', requiresAuth: true },
+    component: () => import('@/views/admin/EmployeeManagementView.vue'),
+  },
+  {
+    path: '/admin/settings',
+    name: 'admin-settings',
+    meta: { title: 'Cài đặt hệ thống', requiresAuth: true },
+    component: () => import('@/views/admin/SettingsView.vue'),
+  },
+  {
+    path: '/admin/logs',
+    name: 'admin-logs',
+    meta: { title: 'Nhật ký hoạt động', requiresAuth: true },
+    component: () => import('@/views/admin/ActivityLogView.vue'),
+  },
+  {
+    path: '/admin/users',
+    name: 'admin-users',
+    meta: { title: 'Quản lý người dùng', requiresAuth: true },
+    component: () => import('@/views/admin/UserManagementView.vue'),
+  },
+  {
+    path: '/admin/reports',
+    name: 'admin-reports',
+    meta: { title: 'Báo cáo và thống kê', requiresAuth: true },
+    component: () => import('@/views/admin/ReportsView.vue'),
+  },
+
+  // Sales routes
+  {
+    path: '/sales-dashboard',
+    name: 'sales-dashboard',
+    meta: { title: 'Dashboard Bán Hàng', requiresAuth: true },
+    component: () => import('@/views/sales/SalesDashboardView.vue'),
+  },
+  {
+    path: '/sales/pos',
+    name: 'sales-pos',
+    meta: { title: 'Bán Hàng', requiresAuth: true },
+    component: () => import('@/views/sales/PointOfSaleView.vue'),
+  },
+  {
+    path: '/sales/search',
+    name: 'sales-search',
+    meta: { title: 'Tra Cứu Sản Phẩm', requiresAuth: true },
+    component: () => import('@/views/sales/ProductSearchView.vue'),
+  },
+  {
+    path: '/sales/history',
+    name: 'sales-history',
+    meta: { title: 'Lịch Sử Bán Hàng', requiresAuth: true },
+    component: () => import('@/views/sales/SalesHistoryView.vue'),
+  },
+
+  // Customer routes
+  {
+    path: '/customer-dashboard',
+    name: 'customer-dashboard',
+    meta: { title: 'Trang chủ - Khách hàng', requiresAuth: true },
+    component: () => import('@/views/customer/CustomerDashboardView.vue'),
+  },
+  {
+    path: '/customer/orders',
+    name: 'customer-orders',
+    meta: { title: 'Lịch Sử Mua Hàng', requiresAuth: true },
+    component: () => import('@/views/customer/OrderHistoryView.vue'),
+  },
+  {
+    path: '/customer/promotions',
+    name: 'customer-promotions',
+    meta: { title: 'Khuyến Mãi & Tích Điểm', requiresAuth: true },
+    component: () => import('@/views/customer/CustomerPromotionsView.vue'),
+  },
+
   // // Manager dashboard
   // {
   //   path: '/manager-dashboard',
