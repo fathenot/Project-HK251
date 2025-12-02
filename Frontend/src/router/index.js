@@ -154,6 +154,46 @@ const routes = [
     component: () => import('@/views/ProductView.vue'),
   },
 
+  // Search employee
+  {
+    path: '/search-employee',
+    name: 'search-employee',
+    meta: { title: 'Tra cứu nhân viên', requiresAuth: true },
+    component: () => import('@/views/EmployeeView.vue'),
+  },
+
+  // Search customer
+  {
+    path: '/search-customer',
+    name: 'search-customer',
+    meta: { title: 'Tra cứu khách hàng', requiresAuth: true },
+    component: () => import('@/views/CustomerView.vue'),
+  },
+
+  // Transfer
+  {
+    path: '/transfer',
+    name: 'transfer',
+    meta: { title: 'Chuyển hàng', requiresAuth: true },
+    component: () => import('@/views/TransferView.vue'),
+  },
+
+  // Warehouses
+  {
+    path: '/warehouses',
+    name: 'warehouses',
+    meta: { title: 'Quản lý kho', requiresAuth: true },
+    component: () => import('@/views/WarehousesView.vue'),
+  },
+
+  // Store info
+  {
+    path: '/store-info',
+    name: 'store-info',
+    meta: { title: 'Thông tin gian hàng', requiresAuth: true },
+    component: () => import('@/views/StoreView.vue'),
+  },
+
   // Search product
   {
     path: '/manager-product',
