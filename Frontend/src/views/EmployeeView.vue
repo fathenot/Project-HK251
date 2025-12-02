@@ -79,6 +79,44 @@ const viewEmployee = (employee) => {
   fetchEmployeeDetail(employee.id)
 }
 
+const addModalActive = ref(false)
+
+const newEmployee = ref({
+  id: '',
+  name: '',
+  email: '',
+  phone: '',
+  address: '',
+  role: { id: 'sales', label: 'Nhân viên bán hàng' },
+  hireDate: '',
+})
+
+const openAddModal = () => {
+  newEmployee.value = {
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    role: { id: 'sales', label: 'Nhân viên bán hàng' },
+    hireDate: '',
+  }
+  addModalActive.value = true
+}
+
+const addEmployee = async () => {
+  try {
+    const res = await api.post('/employees', newEmployee.value)
+
+    employees.value.push(res.data)
+
+    addModalActive.value = false
+  } catch (err) {
+    console.error('Lỗi thêm nhân viên:', err)
+    alert('Không thể thêm nhân viên')
+  }
+}
+
 onMounted(fetchEmployees)
 </script>
 
@@ -94,6 +132,14 @@ onMounted(fetchEmployees)
             <h3 class="mb-2 text-lg font-semibold text-gray-800">Tìm kiếm nhân viên</h3>
             <p class="text-sm text-gray-600">Tìm theo ID, tên, email hoặc số điện thoại</p>
           </div>
+
+          <button
+            @click="openAddModal"
+            class="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700"
+          >
+            + Thêm nhân viên
+          </button>
+
           <div class="w-full md:w-96">
             <div class="relative">
               <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -216,6 +262,37 @@ onMounted(fetchEmployees)
           </div>
         </div>
       </CardBoxModal>
+
+      <CardBoxModal
+        v-model="addModalActive"
+        title="Thêm nhân viên mới"
+        button-label="Lưu"
+        :has-button="true"
+        @confirm="addEmployee"
+      >
+        <div class="space-y-4">
+          <FormControl v-model="newEmployee.id" placeholder="Mã nhân viên (ID)" />
+          <FormControl v-model="newEmployee.name" placeholder="Họ và tên" />
+          <FormControl v-model="newEmployee.email" placeholder="Email" />
+          <FormControl v-model="newEmployee.phone" placeholder="Số điện thoại" />
+          <FormControl v-model="newEmployee.address" placeholder="Địa chỉ" />
+
+          <div class="grid grid-cols-2 gap-4">
+            <FormField label="Vai trò">
+              <FormControl
+                v-model="newEmployee.role"
+                :options="[
+                  { id: 'warehouse', label: 'Nhân viên kho' },
+                  { id: 'sales', label: 'Nhân viên bán hàng' },
+                ]"
+              />
+            </FormField>
+
+            <FormControl v-model="newEmployee.hireDate" type="date" placeholder="Ngày tuyển dụng" />
+          </div>
+        </div>
+      </CardBoxModal>
+
     </SectionMain>
   </LayoutAuthenticated>
 </template>

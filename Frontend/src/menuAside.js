@@ -34,7 +34,7 @@ export default {
       icon: mdiClipboardCheck,
       menu: [
         { to: '/search-employee', icon: mdiAccountGroup, label: 'Nhân viên' },
-        { to: '/search-product', icon: mdiPackageVariant, label: 'Lô hàng/Hàng hóa' },
+        { to: '/manager-product', icon: mdiPackageVariant, label: 'Hàng hóa' },
         { to: '/search-customer', icon: mdiAccount, label: 'Khách hàng' },
       ],
     },
