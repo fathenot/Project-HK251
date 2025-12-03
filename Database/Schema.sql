@@ -6,21 +6,15 @@ USE supermarket_db;
 
 CREATE TABLE customers (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
-first_name VARCHAR(100),
-last_name VARCHAR(100),
+first_name VARCHAR(100) NOT NULL,
+last_name VARCHAR(100) NOT NULL,
 email VARCHAR(255) UNIQUE NOT NULL,
 phone VARCHAR(20),
 address TEXT,
-loyalty_points INT NOT NULL DEFAULT 0
+loyalty_points INT NOT NULL DEFAULT 0,
+password VARCHAR(255)  NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE carts (
-id BIGINT PRIMARY KEY AUTO_INCREMENT,
-customer_id BIGINT NOT NULL UNIQUE,
-created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-CONSTRAINT fk_carts_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE products (
 id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -29,16 +23,6 @@ description TEXT,
 price DECIMAL(10,2) NOT NULL,
 SKU VARCHAR(100) UNIQUE,
 barcode VARCHAR(255) UNIQUE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE cart_items (
-cart_id BIGINT NOT NULL,
-product_id BIGINT NOT NULL,
-quantity INT NOT NULL DEFAULT 1,
-sub_total DECIMAL(12,2) NOT NULL,
-PRIMARY KEY (cart_id, product_id),
-CONSTRAINT fk_cart_items_cart FOREIGN KEY (cart_id) REFERENCES carts(id),
-CONSTRAINT fk_cart_items_product FOREIGN KEY (product_id) REFERENCES products(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE orders (
