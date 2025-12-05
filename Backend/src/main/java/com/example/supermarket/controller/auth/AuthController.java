@@ -75,7 +75,7 @@ public class AuthController {
      * Get current user information
      */
     @GetMapping("/me")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Get current user information",
             description = "Get profile information of the currently authenticated user"
@@ -93,7 +93,7 @@ public class AuthController {
      * Change password
      */
     @PutMapping("/change-password")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "bearerAuth")
     @Operation(
             summary = "Change password",
             description = "Change password for the currently authenticated user"

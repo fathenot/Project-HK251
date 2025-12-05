@@ -3,8 +3,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
+
 @Entity
-@Table(name = "batches")
+@Table(name = "products")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,15 +15,15 @@ import lombok.experimental.FieldDefaults;
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Long id;
 
     private String name;
     private String description;
 
-    private Double price;
+    private BigDecimal price;
 
     @Column(unique = true)
-    private String SKU; 
+    private String sku;
 
    @Column(unique = true)
     private String barcode;
