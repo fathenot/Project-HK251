@@ -56,10 +56,13 @@ export const useMainStore = defineStore('main', () => {
 
   async function login(identifier, password) {
     try {
-      const response = await api.post('/auth/login', {
-        identifier,
-        password,
-      })
+      const response = await api.post(
+        '/auth/login',
+        {
+          identifier,
+          password,
+        }
+      )
       console.log(response.data)
       if (response.data?.success) {
         setUser(response.data.data)

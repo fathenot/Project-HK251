@@ -9,7 +9,7 @@ import SectionTitleLineWithoutButton from '@/components/SectionTitleLineWithoutB
 import FormControl from '@/components/FormControl.vue'
 import { api } from '@/plugins/axios'
 
-// Đổi sampleEmployees -> sampleCustomers
+// Sample dữ liệu dự phòng
 const sampleCustomers = [
   {
     id: 'CUS001',
@@ -19,6 +19,9 @@ const sampleCustomers = [
     phone: '0123456789',
     address: '123 Đường ABC, TP.HCM',
     points: 120,
+    totalOrders: 5,
+    totalSpent: 1200.5,
+    createdAt: '2025-01-01T12:00:00.000Z'
   },
   {
     id: 'CUS002',
@@ -28,10 +31,12 @@ const sampleCustomers = [
     phone: '0987654321',
     address: '456 Đường XYZ, Hà Nội',
     points: 80,
+    totalOrders: 3,
+    totalSpent: 800,
+    createdAt: '2025-02-15T10:30:00.000Z'
   },
 ]
 
-// employees -> customers
 const searchQuery = ref('')
 const customers = ref([])
 
@@ -52,23 +57,55 @@ const modalActive = ref(false)
 const selectedCustomer = ref(null)
 const loadingDetail = ref(false)
 
-// fetch employees -> fetch customers
+// fetch danh sách khách hàng
 const fetchCustomers = async () => {
   try {
-    const res = await api.get('/customers')
-    customers.value = res.data
+    const accessToken = localStorage.getItem('accessToken')
+    const res = await api.get('/customers', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+    customers.value = res.data.data.content.map((c) => ({
+      id: `CUS${c.id.toString().padStart(3, '0')}`,
+      role: 'Khách hàng',
+      name: `${c.first_name} ${c.last_name}`,
+      email: c.email,
+      phone: c.phone,
+      address: c.address,
+      points: c.loyalty_points,
+    }))
   } catch (err) {
     console.warn('Không thể load khách hàng từ API, dùng dữ liệu mẫu', err)
     customers.value = sampleCustomers
   }
 }
 
+// fetch chi tiết khách hàng
 const fetchCustomerDetail = async (id) => {
   loadingDetail.value = true
   selectedCustomer.value = null
   try {
-    const res = await api.get(`/customers/${id}`)
-    selectedCustomer.value = res.data
+    const accessToken = localStorage.getItem('accessToken')
+    const numericId = parseInt(id.replace('CUS', ''))
+    const res = await api.get(`/customers/${numericId}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+    const c = res.data.data
+    selectedCustomer.value = {
+      id: `CUS${c.id.toString().padStart(3, '0')}`,
+      name: `${c.first_name} ${c.last_name}`,
+      email: c.email,
+      phone: c.phone,
+      address: c.address,
+      points: c.loyalty_points,
+      totalOrders: c.total_orders,
+      totalSpent: c.total_spent,
+      createdAt: c.created_at,
+      role: 'Khách hàng'
+    }
   } catch (err) {
     console.warn('Không thể load chi tiết, dùng dữ liệu mẫu', err)
     selectedCustomer.value = customers.value.find((c) => c.id === id)
@@ -189,12 +226,10 @@ onMounted(fetchCustomers)
             </div>
             <div class="space-y-3">
               <p><strong>Vai trò:</strong> {{ selectedCustomer.role }}</p>
-              <p v-if="selectedCustomer.points">
-                <strong>Điểm:</strong> {{ selectedCustomer.points }}
-              </p>
-              <p v-if="selectedCustomer.hireDate">
-                <strong>Ngày tuyển dụng:</strong> {{ selectedCustomer.hireDate }}
-              </p>
+              <p v-if="selectedCustomer.points"><strong>Điểm:</strong> {{ selectedCustomer.points }}</p>
+              <p v-if="selectedCustomer.totalOrders"><strong>Tổng đơn hàng:</strong> {{ selectedCustomer.totalOrders }}</p>
+              <p v-if="selectedCustomer.totalSpent"><strong>Tổng chi tiêu:</strong> {{ selectedCustomer.totalSpent }}</p>
+              <p v-if="selectedCustomer.createdAt"><strong>Ngày tạo:</strong> {{ new Date(selectedCustomer.createdAt).toLocaleString() }}</p>
             </div>
           </div>
         </div>

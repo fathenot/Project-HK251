@@ -12,8 +12,6 @@ import {
   mdiTag,
   mdiChartBar,
   mdiCashRegister,
-  mdiShopping,
-  mdiHistory,
   mdiCog,
   mdiCart,
   mdiGift,

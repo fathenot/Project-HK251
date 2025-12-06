@@ -78,11 +78,10 @@ const submit = async () => {
   }
 
   try {
-    // Gọi API /batches cho từng batch (chỉ import)
     for (const batch of form.batches) {
       const accessToken = localStorage.getItem('accessToken') || ''
       const payload = {
-        variantId: batch.product_id,  // nếu có variantId khác thì sửa
+        variantId: batch.product_id,
         productId: batch.product_id,
         warehouseId: form.warehouse_id,
         quantityTotal: batch.quantity,

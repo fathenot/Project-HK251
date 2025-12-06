@@ -1,4 +1,4 @@
-import { mdiAccount, mdiLogout, mdiThemeLightDark, mdiBell } from '@mdi/js'
+import { mdiAccount, mdiLogout, mdiBell } from '@mdi/js'
 
 export default {
   admin: [
