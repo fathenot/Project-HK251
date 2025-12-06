@@ -22,10 +22,10 @@ public class Batch {
     Long variantId;
 
     @Column(name = "product_id", nullable = false)
-    Long productID;
+    Long productId;
 
     @Column(name = "warehouse_id", nullable = false)
-    Long warehouseID;
+    Long warehouseId;
 
     String manufacture;
     String supplier;

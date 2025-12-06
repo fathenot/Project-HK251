@@ -135,4 +135,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return "EMPLOYEE".equals(userType);
         }
     }
+
+    /**
+     * Kiểm tra endpoint có phải là public không
+     */
+    private boolean isPublicEndpoint(HttpServletRequest request) {
+        String originalPath = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String path = originalPath;
+
+        log.info("Original URI: {}, Context Path: {}", originalPath, contextPath);
+
+        // Remove context path from URI (/api/v1)
+        if (contextPath != null && !contextPath.isEmpty()) {
+            path = path.substring(contextPath.length());
+        }
+
+        log.info("Final path for check: {}", path);
+
+        // Public endpoints - không cần authentication
+        boolean isPublic = path.equals("/auth/login") ||
+                path.equals("/auth/register") ||
+                path.equals("/auth/refresh") ||
+                path.startsWith("/public/") ||
+                path.equals("/swagger-ui.html") ||
+                path.startsWith("/swagger-ui/") ||
+                path.startsWith("/api-docs") ||
+                path.startsWith("/v3/api-docs") ||
+                path.equals("/favicon.ico") ||
+                path.startsWith("/webjars/") ||
+                path.startsWith("/actuator/");
+
+        log.info("Is public endpoint: {}", isPublic);
+        return isPublic;
+    }
 }

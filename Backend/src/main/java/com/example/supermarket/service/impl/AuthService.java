@@ -52,6 +52,8 @@ public class AuthService implements AuthServiceI {
             throw new ConflictError("Email already exists");
         }
 
+        System.out.println(passwordEncoder.encode("manager123"));
+
         // Create new customer
         Customer customer = Customer.builder()
                 .firstName(request.getFirstName())

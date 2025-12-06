@@ -1,6 +1,6 @@
 package com.example.supermarket.entity;
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -30,7 +30,7 @@ public class Employee {
     String lastName;
 
     @Column(name = "hired_at", updatable = false)
-    LocalDate hiredAt;
+    LocalDateTime hiredAt;
     
     @Column(name = "manager_id")
     Long managerID;
