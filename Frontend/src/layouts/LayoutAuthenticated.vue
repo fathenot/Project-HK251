@@ -24,7 +24,8 @@ const isAsideLgActive = ref(false)
 const isNotificationOpen = ref(false)
 const notificationRef = ref(null)
 
-const role = localStorage.getItem('role') || 'customer'
+const savedUser = JSON.parse(localStorage.getItem('user') || '{}')
+const role = savedUser.role || ''
 
 const navBarMenu = menuNavBar[role] || []
 const asideMenu = menuAside[role] || []
@@ -51,8 +52,9 @@ const menuClick = (event, item) => {
   }
 
   if (item.isLogout) {
-    localStorage.removeItem('role')
     localStorage.removeItem('user')
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
     router.push('/login')
   }
 
