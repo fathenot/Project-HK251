@@ -49,73 +49,74 @@ const formModalOkActive = ref(false)
 const formMessage = ref('')
 
 const submit = async () => {
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0];
 
   if (!form.employee_id || !form.warehouse_id) {
-    formMessage.value = 'Vui lòng nhập nhân viên và kho!'
-    formModalActive.value = true
-    return
+    formMessage.value = 'Vui lòng nhập nhân viên và kho!';
+    formModalActive.value = true;
+    return;
   }
 
   for (const [i, batch] of form.batches.entries()) {
     if (!batch.product_id || !batch.product_name) {
-      formMessage.value = `Lô hàng #${i + 1}: sản phẩm và tên sản phẩm không được để trống!`
-      formModalActive.value = true
-      return
+      formMessage.value = `Lô hàng #${i + 1}: sản phẩm và tên sản phẩm không được để trống!`;
+      formModalActive.value = true;
+      return;
     }
 
     if (batch.quantity <= 0) {
-      formMessage.value = `Lô hàng #${i + 1}: số lượng phải > 0!`
-      formModalActive.value = true
-      return
+      formMessage.value = `Lô hàng #${i + 1}: số lượng phải > 0!`;
+      formModalActive.value = true;
+      return;
     }
 
-    if (form.type.id === 'import') {
-      if (batch.expiry_date && batch.expiry_date < today) {
-        formMessage.value = `Lô hàng #${i + 1}: ngày hết hạn không hợp lệ!`
-        formModalActive.value = true
-        return
-      }
-      if (!batch.unit_price) {
-        formMessage.value = `Lô hàng #${i + 1}: đơn giá không được để trống!`
-        formModalActive.value = true
-        return
-      }
-    } else {
-      if (!batch.batch_id) {
-        formMessage.value = `Lô hàng #${i + 1}: cần chọn lô hàng xuất!`
-        formModalActive.value = true
-        return
-      }
+    if (batch.expiry_date && batch.expiry_date < today) {
+      formMessage.value = `Lô hàng #${i + 1}: ngày hết hạn không hợp lệ!`;
+      formModalActive.value = true;
+      return;
     }
   }
 
   try {
-    const payload = { ...form }
-    payload.type = form.type.id
-    //console.log(payload)
-    const response = await api.post('/warehouse/receipts', payload)
+    // Gọi API /batches cho từng batch (chỉ import)
+    for (const batch of form.batches) {
+      const accessToken = localStorage.getItem('accessToken') || ''
+      const payload = {
+        variantId: batch.product_id,  // nếu có variantId khác thì sửa
+        productId: batch.product_id,
+        warehouseId: form.warehouse_id,
+        quantityTotal: batch.quantity,
+        manufacture: batch.manufacture,
+        supplier: batch.supplier,
+        createDate: form.import_date || today,
+        expiryDate: batch.expiry_date || null,
+      };
 
-    if (response.data?.success) {
-      formMessage.value = 'Phiếu đã được tạo thành công!'
-      formModalOkActive.value = true
-      // Reset form
-      form.batches = []
-      form.employee_id = ''
-      form.warehouse_id = ''
-      form.import_date = ''
-      form.export_date = ''
-      form.export_reason = ''
-    } else {
-      formMessage.value = response.data?.message || 'Tạo phiếu thất bại!'
-      formModalActive.value = true
+      await api.post(
+        '/batches',
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        }
+      );
     }
+
+    formMessage.value = 'Các batch đã được tạo thành công!';
+    formModalOkActive.value = true;
+
+    // Reset form
+    form.batches = [];
+    form.employee_id = '';
+    form.warehouse_id = '';
+    form.import_date = '';
   } catch (err) {
-    console.error(err)
-    formMessage.value = err.response?.data?.message || 'Đã có lỗi xảy ra! Vui lòng thử lại.'
-    formModalActive.value = true
+    console.error(err);
+    formMessage.value = err.response?.data?.message || 'Đã có lỗi xảy ra! Vui lòng thử lại.';
+    formModalActive.value = true;
   }
-}
+};
 </script>
 
 <template>

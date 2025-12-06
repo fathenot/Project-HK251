@@ -62,7 +62,7 @@ const submit = async () => {
   }
 
   try {
-    const res = await api.post('/api/v1/auth/register', content)
+    const res = await api.post('/auth/register', content)
 
     if (res.data?.success) {
       alert('Đăng ký thành công! Vui lòng đăng nhập.')
