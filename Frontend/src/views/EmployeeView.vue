@@ -101,7 +101,7 @@ const addEmployee = async () => {
   try {
     const body = { employee: { username: newEmployee.value.username, password: '123456', firstName: newEmployee.value.firstName, lastName: newEmployee.value.lastName, managerId: 0 } }
     let res
-    if (newEmployee.value.role === 'warehouse') {
+    if (newEmployee.value.role.id === 'warehouse') {
       body.warehouseId = 1
       res = await api.post('/employees/warehouse', body, { headers: getTokenHeader() })
     } else {
