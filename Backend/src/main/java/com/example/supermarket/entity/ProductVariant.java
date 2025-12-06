@@ -17,7 +17,7 @@ public class ProductVariant {
     Long id;
 
     @Column(name = "product_id", nullable = false)
-    Long productID;
+    Long productId;
 
     @Column(name = "variant_json", columnDefinition = "JSON")
     String variantJson;

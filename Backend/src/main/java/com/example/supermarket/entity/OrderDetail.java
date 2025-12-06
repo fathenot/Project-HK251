@@ -21,4 +21,19 @@ public class OrderDetail {
 
     @Column(name = "sub_total")
     float subtotal;
+
+    public void setProductId(Long productId) {
+        if (this.id == null) {
+            this.id = new OrderDetailID();
+        }
+        this.id.setProductId(productId);
+    }
+
+    public Long getProductId() {
+        return id != null ? id.getProductId() : null;
+    }
+
+    public Long getOrderId() {
+        return id != null ? id.getOrderID() : null;
+    }
 }
