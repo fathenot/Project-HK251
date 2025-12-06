@@ -38,4 +38,3 @@ build/
 .env.*.local
 .env.test.local
 .env.production.local
-*.env.*
