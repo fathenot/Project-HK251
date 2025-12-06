@@ -56,10 +56,13 @@ export const useMainStore = defineStore('main', () => {
 
   async function login(identifier, password) {
     try {
-      const response = await api.post('/api/v1/auth/login', {
-        identifier,
-        password,
-      })
+      const response = await api.post(
+        '/auth/login',
+        {
+          identifier,
+          password,
+        }
+      )
       console.log(response.data)
       if (response.data?.success) {
         setUser(response.data.data)
@@ -102,7 +105,7 @@ export const useMainStore = defineStore('main', () => {
   async function refreshAccessToken() {
     if (!refreshToken.value) throw new Error('No refresh token available')
     try {
-      const res = await api.post('/api/v1/auth/refresh', {
+      const res = await api.post('/auth/refresh', {
         refreshToken: refreshToken.value,
       })
       if (res.data?.success) {

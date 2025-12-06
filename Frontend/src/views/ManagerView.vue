@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { api } from '@/plugins/axios'
-
 import {
   mdiChartTimelineVariant,
   mdiReload,
@@ -22,17 +21,66 @@ import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.
 import SectionTitleLineWithoutButton from '@/components/SectionTitleLineWithoutButton.vue'
 
 // Dashboard data
-const chartData = ref(null)
-
 const dashboardData = ref({
   doanhThuHomNay: 0,
   donHangHomNay: 0,
   tongTonKho: 0,
-  canhBao: 0,
+  canhBaoTonKho: 0,
+  canhBaoLoHetHan: 0,
 })
 
-// Mock chart data
-const getTestChartData = () => ({
+// Chart data
+const chartData = ref(null)
+
+// Lấy header token
+const getTokenHeader = () => ({
+  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+})
+
+// Lấy dashboard data
+const fetchDashboard = async () => {
+  const today = new Date().toISOString().slice(0, 10) // yyyy-mm-dd
+  try {
+    // 1. Đơn hàng & doanh thu hôm nay
+    const ordersRes = await api.get('/orders/statistics', {
+      headers: getTokenHeader(),
+      params: { fromDate: today, toDate: today },
+    })
+    const stats = ordersRes.data.data || {}
+    dashboardData.value.doanhThuHomNay = stats.revenue || 0
+    dashboardData.value.donHangHomNay = stats.orders || 0
+
+    // 2. Tổng tồn kho & cảnh báo tồn kho
+    const productsRes = await api.get('/products/low-stock', {
+      headers: getTokenHeader(),
+      params: { threshold: 10, page: 0, size: 1000 },
+    })
+    const products = productsRes.data.data.content || []
+    dashboardData.value.canhBaoTonKho = products.length
+    dashboardData.value.tongTonKho = products.reduce((sum, p) => sum + (p.available_quantity || 0), 0)
+
+    // 3. Cảnh báo lô hết hạn
+    const expiredRes = await api.get('/batches/expired', {
+      headers: getTokenHeader(),
+      params: { page: 0, size: 1000 },
+    })
+    const batches = expiredRes.data.data.content || []
+    dashboardData.value.canhBaoLoHetHan = batches.length
+  } catch (err) {
+    console.error('Lỗi load dashboard:', err)
+    // fallback dữ liệu mẫu
+    dashboardData.value = {
+      doanhThuHomNay: 3500000,
+      donHangHomNay: 45,
+      tongTonKho: 540,
+      canhBaoTonKho: 5,
+      canhBaoLoHetHan: 2,
+    }
+  }
+}
+
+// Chart tuần (mock nếu chưa có API)
+const getMockChartData = () => ({
   labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
   datasets: [
     {
@@ -52,31 +100,12 @@ const getTestChartData = () => ({
   ],
 })
 
-// Fetch dashboard API
-const fetchDashboard = async () => {
-  try {
-    const res = await api.get('/manager/warehouse-summary')
-    dashboardData.value = res.data
-  } catch (error) {
-    console.error('Lỗi load dashboard:', error)
-    // fallback dữ liệu mẫu
-    dashboardData.value = {
-      doanhThuHomNay: 3500000,
-      donHangHomNay: 45,
-      tongTonKho: 540,
-      canhBao: 5,
-    }
-  }
-}
-
-// Fetch chart API
 const fetchChart = async () => {
   try {
-    const res = await api.get('/manager/warehouse-chart')
-    chartData.value = res.data
-  } catch (e) {
-    console.error('Lỗi load chart:', e)
-    chartData.value = getTestChartData()
+    chartData.value = getMockChartData()
+  } catch (err) {
+    console.error('Lỗi load chart:', err)
+    chartData.value = getMockChartData()
   }
 }
 
@@ -91,7 +120,7 @@ onMounted(() => {
     <SectionMain>
       <SectionTitleLineWithoutButton :icon="mdiChartTimelineVariant" title="Tổng quan" main />
 
-      <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <CardBoxWidget
           :number="dashboardData.doanhThuHomNay"
           label="Doanh thu hôm nay"
@@ -115,10 +144,17 @@ onMounted(() => {
         />
 
         <CardBoxWidget
-          :number="dashboardData.canhBao"
+          :number="dashboardData.canhBaoTonKho"
           label="Cảnh báo tồn kho"
           :icon="mdiAlertCircle"
           color="text-red-500"
+        />
+
+        <CardBoxWidget
+          :number="dashboardData.canhBaoLoHetHan"
+          label="Cảnh báo lô hết hạn"
+          :icon="mdiAlertCircle"
+          color="text-yellow-500"
         />
       </div>
 

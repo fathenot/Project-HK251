@@ -98,7 +98,7 @@ const submitPassword = async () => {
   try {
     const accessToken = localStorage.getItem('accessToken') || ''
     const res = await api.put(
-      'api/v1/auth/change-password',
+      '/auth/change-password',
       { ...passwordForm },
       {
         headers: {
