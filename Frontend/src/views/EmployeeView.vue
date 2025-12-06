@@ -9,22 +9,10 @@ import SectionTitleLineWithoutButton from '@/components/SectionTitleLineWithoutB
 import FormControl from '@/components/FormControl.vue'
 import { api } from '@/plugins/axios'
 
-// Dữ liệu mẫu fallback
+// Dữ liệu fallback
 const sampleEmployees = [
-  {
-    id: 'EMP001',
-    role: 'warehouse',
-    name: 'Lionel Messi',
-    email: 'lionelmessi@example.com',
-    hireDate: '2022-07-01',
-  },
-  {
-    id: 'EMP002',
-    role: 'sales',
-    name: 'Cristiano Ronaldo',
-    email: 'cr7@example.com',
-    hireDate: '2023-01-15',
-  },
+  { id: 'EMP001', role: 'warehouse', username: 'messi', name: 'Lionel Messi', hireDate: '2022-07-01' },
+  { id: 'EMP002', role: 'sales', username: 'ronaldo', name: 'Cristiano Ronaldo', hireDate: '2023-01-15' },
 ]
 
 const searchQuery = ref('')
@@ -35,45 +23,39 @@ const filteredEmployees = computed(() =>
     const q = searchQuery.value.toLowerCase()
     return (
       e.id.toLowerCase().includes(q) ||
-      e.name.toLowerCase().includes(q) ||
-      e.email.toLowerCase().includes(q)
+      e.username.toLowerCase().includes(q) ||
+      e.name.toLowerCase().includes(q)
     )
   }),
 )
 
-// Modal chi tiết
+// Chi tiết modal
 const modalActive = ref(false)
 const selectedEmployee = ref(null)
 const loadingDetail = ref(false)
 
-// Modal thêm mới
+// Thêm mới modal
 const addModalActive = ref(false)
 const newEmployee = ref({
   username: '',
   firstName: '',
   lastName: '',
-  email: '',
-  role: 'sales', // sales mặc định
+  role: 'sales',
 })
 
 // AccessToken
-const getTokenHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-})
+const getTokenHeader = () => ({ Authorization: `Bearer ${localStorage.getItem('accessToken')}` })
 
-// Fetch danh sách nhân viên
+// Fetch employees
 const fetchEmployees = async () => {
   try {
-    const res = await api.get('/employees', {
-      headers: getTokenHeader(),
-      params: { page: 0, size: 1000 },
-    })
+    const res = await api.get('/employees', { headers: getTokenHeader(), params: { page: 0, size: 1000 } })
     employees.value = res.data.data.content.map((e) => ({
       id: `EMP${e.id.toString().padStart(3, '0')}`,
+      username: e.username,
       name: `${e.first_name} ${e.last_name}`,
-      email: e.username,
-      hireDate: new Date(e.hired_at).toLocaleDateString(),
       role: e.employee_type,
+      hireDate: new Date(e.hired_at).toLocaleDateString(),
     }))
   } catch (err) {
     console.warn('Không thể load nhân viên, dùng dữ liệu mẫu', err)
@@ -81,7 +63,7 @@ const fetchEmployees = async () => {
   }
 }
 
-// Chi tiết nhân viên
+// Chi tiết employee
 const fetchEmployeeDetail = async (id) => {
   loadingDetail.value = true
   selectedEmployee.value = null
@@ -91,10 +73,10 @@ const fetchEmployeeDetail = async (id) => {
     const e = res.data.data
     selectedEmployee.value = {
       id: `EMP${e.id.toString().padStart(3, '0')}`,
+      username: e.username,
       name: `${e.first_name} ${e.last_name}`,
-      email: e.username,
-      hireDate: new Date(e.hired_at).toLocaleDateString(),
       role: e.employee_type,
+      hireDate: new Date(e.hired_at).toLocaleDateString(),
     }
   } catch (err) {
     console.warn('Không thể load chi tiết, dùng dữ liệu mẫu', err)
@@ -109,47 +91,30 @@ const viewEmployee = (emp) => {
   fetchEmployeeDetail(emp.id)
 }
 
-// Mở modal thêm
+// Thêm employee
 const openAddModal = () => {
-  newEmployee.value = {
-    username: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    role: 'sales',
-  }
+  newEmployee.value = { username: '', firstName: '', lastName: '', role: 'sales' }
   addModalActive.value = true
 }
 
-// Thêm nhân viên
 const addEmployee = async () => {
   try {
-    const body = {
-      employee: {
-        username: newEmployee.value.username,
-        password: '123456', // mặc định password
-        firstName: newEmployee.value.firstName,
-        lastName: newEmployee.value.lastName,
-        managerId: 0,
-      },
-    }
-
+    const body = { employee: { username: newEmployee.value.username, password: '123456', firstName: newEmployee.value.firstName, lastName: newEmployee.value.lastName, managerId: 0 } }
     let res
     if (newEmployee.value.role === 'warehouse') {
-      body.warehouseId = 1 // mặc định warehouseId=1
+      body.warehouseId = 1
       res = await api.post('/employees/warehouse', body, { headers: getTokenHeader() })
     } else {
       body.storeId = 0
       res = await api.post('/employees/sales', body, { headers: getTokenHeader() })
     }
-
     const e = res.data.data
     employees.value.push({
       id: `EMP${e.id.toString().padStart(3, '0')}`,
+      username: e.username,
       name: `${e.first_name} ${e.last_name}`,
-      email: e.username,
-      hireDate: new Date(e.hired_at).toLocaleDateString(),
       role: e.employee_type,
+      hireDate: new Date(e.hired_at).toLocaleDateString(),
     })
     addModalActive.value = false
   } catch (err) {
@@ -158,7 +123,7 @@ const addEmployee = async () => {
   }
 }
 
-// Xóa nhân viên
+// Xóa employee
 const deleteEmployee = async (id) => {
   if (!confirm('Bạn có chắc muốn xóa nhân viên này?')) return
   try {
@@ -180,22 +145,24 @@ onMounted(fetchEmployees)
       <SectionTitleLineWithoutButton :icon="mdiAccount" title="Tra cứu nhân viên" />
 
       <!-- Search & Add -->
-      <CardBox class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm flex items-center justify-between px-6 py-4">
-        <div class="flex-1">
-          <h3 class="mb-2 text-lg font-semibold text-gray-800">Tìm kiếm nhân viên</h3>
-          <p class="text-sm text-gray-600">Tìm theo ID, tên hoặc email</p>
-        </div>
-        <button @click="openAddModal" class="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700">
-          + Thêm nhân viên
-        </button>
-        <div class="ml-4 w-96">
-          <div class="relative">
-            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
-                <path :d="mdiMagnify" />
-              </svg>
+      <CardBox class="mb-6 rounded-xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div class="flex-1">
+            <h3 class="mb-2 text-lg font-semibold text-gray-800">Tìm kiếm nhân viên</h3>
+            <p class="text-sm text-gray-600">Tìm theo ID, tên hoặc username</p>
+          </div>
+          <button @click="openAddModal" class="rounded-lg bg-blue-600 px-4 py-2 text-white shadow hover:bg-blue-700">
+            + Thêm nhân viên
+          </button>
+          <div class="w-full md:w-96">
+            <div class="relative">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+                  <path :d="mdiMagnify" />
+                </svg>
+              </div>
+              <FormControl v-model="searchQuery" placeholder="Nhập ID, tên hoặc username..." class="pl-10" />
             </div>
-            <FormControl v-model="searchQuery" placeholder="Nhập ID, tên hoặc email..." class="pl-10" />
           </div>
         </div>
       </CardBox>
@@ -214,8 +181,8 @@ onMounted(fetchEmployees)
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Họ và tên</th>
-                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Tên</th>
+                <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Username</th>
                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Vai trò</th>
                 <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase">Hành động</th>
               </tr>
@@ -224,7 +191,7 @@ onMounted(fetchEmployees)
               <tr v-for="emp in filteredEmployees" :key="emp.id" class="hover:bg-blue-50 cursor-pointer">
                 <td class="px-6 py-4" @click="viewEmployee(emp)">{{ emp.id }}</td>
                 <td class="px-6 py-4" @click="viewEmployee(emp)">{{ emp.name }}</td>
-                <td class="px-6 py-4" @click="viewEmployee(emp)">{{ emp.email }}</td>
+                <td class="px-6 py-4" @click="viewEmployee(emp)">{{ emp.username }}</td>
                 <td class="px-6 py-4" @click="viewEmployee(emp)">{{ emp.role }}</td>
                 <td class="px-6 py-4">
                   <button @click.stop="deleteEmployee(emp.id)" class="text-red-600 hover:underline flex items-center gap-1">
@@ -249,8 +216,8 @@ onMounted(fetchEmployees)
         </div>
         <div v-else-if="selectedEmployee" class="space-y-3">
           <p><strong>ID:</strong> {{ selectedEmployee.id }}</p>
-          <p><strong>Họ và tên:</strong> {{ selectedEmployee.name }}</p>
-          <p><strong>Email:</strong> {{ selectedEmployee.email }}</p>
+          <p><strong>Tên:</strong> {{ selectedEmployee.name }}</p>
+          <p><strong>Username:</strong> {{ selectedEmployee.username }}</p>
           <p><strong>Vai trò:</strong> {{ selectedEmployee.role }}</p>
           <p v-if="selectedEmployee.hireDate"><strong>Ngày tuyển dụng:</strong> {{ selectedEmployee.hireDate }}</p>
         </div>
@@ -262,10 +229,7 @@ onMounted(fetchEmployees)
           <FormControl v-model="newEmployee.username" placeholder="Username" />
           <FormControl v-model="newEmployee.firstName" placeholder="Họ" />
           <FormControl v-model="newEmployee.lastName" placeholder="Tên" />
-          <FormControl v-model="newEmployee.email" placeholder="Email" />
-          <div class="grid grid-cols-2 gap-4">
-            <FormControl v-model="newEmployee.role" :options="[{id:'warehouse', label:'Nhân viên kho'}, {id:'sales', label:'Nhân viên bán hàng'}]" />
-          </div>
+          <FormControl v-model="newEmployee.role" :options="[{id:'warehouse', label:'Nhân viên kho'}, {id:'sales', label:'Nhân viên bán hàng'}]" />
         </div>
       </CardBoxModal>
 
