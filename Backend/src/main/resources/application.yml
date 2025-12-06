@@ -16,12 +16,6 @@ spring:
       max-lifetime: 1800000
       connection-timeout: 30000
 
-jwt:
-  secret: ${SECRET_KEY}
-
-  expiration: 86400000
-  refresh-expiration: 604800000
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -32,6 +26,12 @@ jwt:
         dialect: org.hibernate.dialect.MySQL8Dialect
     jackson:
       time-zone: Asia/Ho_Chi_Minh
+
+jwt:
+  secret: ${SECRET_KEY}
+
+  expiration: 86400000
+  refresh-expiration: 604800000
 
 springdoc:
   api-docs:
