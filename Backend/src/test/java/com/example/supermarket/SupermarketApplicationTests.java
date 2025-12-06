@@ -144,7 +144,7 @@ class EntityMethodAcceptTest {
 	// 	assertEquals(2L, obj.getWarehouseID());
 	// }
 
-	// @Test
+	/// @Test
 	// void testWarehouseExportDetail(){
 	// 	WarehouseExportDetail obj = new WarehouseExportDetail(1L, "Damaged goods", 2L, 
 	// 								LocalDateTime.of(2025, 11, 20, 10, 0, 0), 3L);
