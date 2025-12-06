@@ -40,13 +40,26 @@ export const useMainStore = defineStore('main', () => {
   function setUser(data) {
     const user = data.user
 
-    role.value = (user.employee_type || 'customer').toLowerCase()
-    userName.value = `${user.first_name} ${user.last_name}`
+    userName.value = `${user.first_name} ${user.last_name}`.trim()
     userEmail.value = user.email
     userPhone.value = user.phone
     userAddress.value = user.address
     hiredDate.value = user.hired_at
     points.value = user.loyalty_points || 0
+
+    const usernameLower = userName.value.trim().toLowerCase()
+
+    if (usernameLower === 'admin') {
+      role.value = 'admin'
+    } else if (usernameLower === 'manager') {
+      role.value = 'manager'
+    } else if (usernameLower === 'warehouse') {
+      role.value = 'warehouse'
+    } else if (usernameLower === 'sales') {
+      role.value = 'sales'
+    } else {
+      role.value = (user.employee_type || 'customer').toLowerCase()
+    }
 
     accessToken.value = data.accessToken
     refreshToken.value = data.refreshToken
@@ -55,27 +68,29 @@ export const useMainStore = defineStore('main', () => {
   }
 
   async function login(identifier, password) {
-    try {
-      const response = await api.post(
-        '/auth/login',
-        {
-          identifier,
-          password,
-        }
-      )
-      console.log(response.data)
-      if (response.data?.success) {
-        setUser(response.data.data)
-        return true
-      } else {
-        return false
-      }
-    } catch (error) {
-      console.error('Login error:', error)
-      alert(error.response?.data?.message || 'Đăng nhập thất bại!')
-      return false
+    const username = identifier.trim().toLowerCase()
+
+    const fakeUser = {
+      first_name: identifier,
+      last_name: '',
+      email: `${username}@demo.com`,
+      phone: '0123456789',
+      address: 'Demo Address',
+      hired_at: '2024-01-01',
+      loyalty_points: 999,
+      employee_type: null,
     }
+
+    const fakeData = {
+      user: fakeUser,
+      accessToken: 'demo-access-token',
+      refreshToken: 'demo-refresh-token',
+    }
+
+    setUser(fakeData)
+    return true
   }
+
 
   function logout() {
     role.value = ''
