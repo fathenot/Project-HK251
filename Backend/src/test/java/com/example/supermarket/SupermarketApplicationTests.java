@@ -169,4 +169,4 @@ class EntityMethodAcceptTest {
 
 	// // AUXILIARY CLASSES	
 	
-// }
+}

@@ -14,28 +14,20 @@ import { api } from '@/plugins/axios.js'
 
 const mainStore = useMainStore()
 
-const profileForm = reactive({})
-
-if (mainStore.userName) profileForm.name = mainStore.userName
-if (mainStore.userEmail) profileForm.email = mainStore.userEmail
-if (mainStore.userPhone) profileForm.phone = mainStore.userPhone
-if (mainStore.userAddress) profileForm.address = mainStore.userAddress
-if (mainStore.hireDate) profileForm.hireDate = mainStore.hireDate
-if (mainStore.points && mainStore.role === 'customer') profileForm.points = mainStore.points
-
-// Form đổi mật khẩu
-const passwordForm = reactive({
-  password_current: '',
-  password: '',
-  password_confirmation: '',
+const profileForm = reactive({
+  name: mainStore.userName || '',
+  email: mainStore.userEmail || '',
+  phone: mainStore.userPhone || '',
+  address: mainStore.userAddress || '',
+  hireDate: mainStore.role !== 'customer' ? mainStore.hiredDate : undefined,
+  points: mainStore.role === 'customer' ? mainStore.points : undefined,
+  role: mainStore.role,
 })
 
-// Modal thông báo chung
 const modalActive = ref(false)
 const modalMessage = ref('')
 const modalTitle = ref('Thông báo')
 
-// Modal đổi mật khẩu
 const editPasswordMode = ref(false)
 
 const showModal = (title, message) => {
@@ -44,10 +36,7 @@ const showModal = (title, message) => {
   modalActive.value = true
 }
 
-const validateEmail = (email) => {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return re.test(email)
-}
+const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
 const submitProfile = async () => {
   if (!profileForm.name) {
@@ -55,20 +44,13 @@ const submitProfile = async () => {
     return
   }
 
+  // Customer bắt buộc email
   if (mainStore.role === 'customer') {
-    if (!profileForm.email) {
-      showModal('Lỗi', 'Email là bắt buộc!')
-      return
-    }
-    if (!validateEmail(profileForm.email)) {
-      showModal('Lỗi', 'Email không hợp lệ!')
-      return
-    }
+    if (!profileForm.email) return showModal('Lỗi', 'Email là bắt buộc!')
+    if (!validateEmail(profileForm.email)) return showModal('Lỗi', 'Email không hợp lệ!')
   } else {
-    if (profileForm.email && !validateEmail(profileForm.email)) {
-      showModal('Lỗi', 'Email không hợp lệ!')
-      return
-    }
+    if (profileForm.email && !validateEmail(profileForm.email))
+      return showModal('Lỗi', 'Email không hợp lệ!')
   }
 
   if (profileForm.phone && !/^\d{9,15}$/.test(profileForm.phone)) {
@@ -86,20 +68,24 @@ const submitProfile = async () => {
       return
     }
 
-    mainStore.setUser(payload)
+    mainStore.setUser(res.data.data)
+
     showModal('Thành công', res.data?.message || 'Thông tin đã được cập nhật!')
   } catch (err) {
     showModal('Lỗi', err.response?.data?.message || 'Cập nhật thất bại!')
   }
 }
 
+const passwordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  passwordConfirmation: '',
+})
+
 const submitPassword = async () => {
-  // Validation
-  if (
-    !passwordForm.password_current ||
-    !passwordForm.password ||
-    !passwordForm.password_confirmation
-  ) {
+  if (!passwordForm.currentPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.passwordConfirmation) {
     showModal('Lỗi', 'Vui lòng điền đầy đủ các trường mật khẩu!')
     return
   }
@@ -110,17 +96,26 @@ const submitPassword = async () => {
   }
 
   try {
-    const res = await api.put('/user/password', { ...passwordForm })
+    const accessToken = localStorage.getItem('accessToken') || ''
+    const res = await api.put(
+      'api/v1/auth/change-password',
+      { ...passwordForm },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    )
 
     if (!res.data?.success) {
       showModal('Lỗi', res.data?.message || 'Đổi mật khẩu thất bại!')
       return
     }
 
-    showModal('Thành công', res.data?.message || 'Đổi mật khẩu thành công!')
-    passwordForm.password_current = ''
-    passwordForm.password = ''
-    passwordForm.password_confirmation = ''
+    showModal('Thành công', 'Đổi mật khẩu thành công!')
+    passwordForm.currentPassword = ''
+    passwordForm.newPassword = ''
+    passwordForm.passwordConfirmation = ''
     editPasswordMode.value = false
   } catch (err) {
     showModal('Lỗi', err.response?.data?.message || 'Đổi mật khẩu thất bại!')
@@ -145,24 +140,24 @@ const submitPassword = async () => {
             <FormControl v-model="profileForm.name" :icon="mdiAccount" />
           </FormField>
 
-          <FormField v-if="profileForm.email !== undefined" label="Email">
-            <FormControl v-model="profileForm.email" :icon="mdiMail" />
+          <FormField v-if="profileForm.role === 'customer'" label="Email">
+            <FormControl v-model="profileForm.email" :icon="mdiMail" readonly />
           </FormField>
 
-          <FormField v-if="profileForm.phone !== undefined" label="Số điện thoại">
+          <FormField v-if="profileForm.role === 'customer'" label="Số điện thoại">
             <FormControl v-model="profileForm.phone" :icon="mdiPhone" />
           </FormField>
 
-          <FormField v-if="profileForm.address !== undefined" label="Địa chỉ">
+          <FormField v-if="profileForm.role === 'customer'" label="Địa chỉ">
             <FormControl v-model="profileForm.address" :icon="mdiHome" />
           </FormField>
 
-          <FormField v-if="profileForm.hireDate !== undefined" label="Ngày vào làm">
-            <FormControl v-model="profileForm.hireDate" :icon="mdiCalendar" />
+          <FormField v-if="profileForm.role !== 'customer'" label="Ngày vào làm">
+            <FormControl v-model="profileForm.hireDate" :icon="mdiCalendar" readonly />
           </FormField>
 
-          <FormField v-if="profileForm.points !== undefined" label="Điểm tích lũy">
-            <FormControl :value="profileForm.points" readonly />
+          <FormField v-if="profileForm.points !== customer" label="Điểm tích lũy">
+            <FormControl v-model="profileForm.points" readonly />
           </FormField>
 
           <template #footer>
@@ -177,13 +172,13 @@ const submitPassword = async () => {
 
     <CardBoxModal v-model="editPasswordMode" title="Đổi mật khẩu">
       <FormField label="Mật khẩu hiện tại">
-        <FormControl v-model="passwordForm.password_current" type="password" :icon="mdiLock" />
+        <FormControl v-model="passwordForm.currentPassword" type="password" :icon="mdiLock" />
       </FormField>
       <FormField label="Mật khẩu mới">
-        <FormControl v-model="passwordForm.password" type="password" :icon="mdiLock" />
+        <FormControl v-model="passwordForm.newPassword" type="password" :icon="mdiLock" />
       </FormField>
       <FormField label="Xác nhận mật khẩu">
-        <FormControl v-model="passwordForm.password_confirmation" type="password" :icon="mdiLock" />
+        <FormControl v-model="passwordForm.passwordConfirmation" type="password" :icon="mdiLock" />
       </FormField>
 
       <div class="mt-10">
