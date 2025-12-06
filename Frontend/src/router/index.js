@@ -269,7 +269,7 @@ const router = createRouter({
 
 // Auth guard
 router.beforeEach((to, from, next) => {
-  const isLoggedIn = !!localStorage.getItem('role')
+  const isLoggedIn = !!localStorage.getItem('user')
 
   if (to.meta.requiresAuth && !isLoggedIn) {
     next({ path: '/login' })

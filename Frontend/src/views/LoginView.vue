@@ -43,8 +43,6 @@ const submit = async () => {
         default:
           router.push('/customer-dashboard')
       }
-    } else {
-      alert('Lỗi kết nối, vui lòng thử lại sau!')
     }
   } catch (error) {
     console.error(error)

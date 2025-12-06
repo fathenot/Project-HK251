@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import * as jwtDecode from 'jwt-decode'
 import { api } from '@/plugins/axios.js'
 
 export const useMainStore = defineStore('main', () => {
@@ -10,8 +11,11 @@ export const useMainStore = defineStore('main', () => {
   const userEmail = ref(savedUser.email || '')
   const userPhone = ref(savedUser.phone || '')
   const userAddress = ref(savedUser.address || '')
-  const hireDate = ref(savedUser.hireDate || '')
+  const hiredDate = ref(savedUser.hiredDate || '')
   const points = ref(savedUser.points || 0)
+
+  const accessToken = ref(localStorage.getItem('accessToken') || '')
+  const refreshToken = ref(localStorage.getItem('refreshToken') || '')
 
   const userAvatar = computed(() => {
     const seed = userEmail.value || userName.value || 'default'
@@ -25,75 +29,48 @@ export const useMainStore = defineStore('main', () => {
       email: userEmail.value,
       phone: userPhone.value,
       address: userAddress.value,
-      hireDate: hireDate.value,
+      hiredDate: hiredDate.value,
       points: points.value,
     }
     localStorage.setItem('user', JSON.stringify(userData))
-    localStorage.setItem('role', userData.role)
+    localStorage.setItem('accessToken', accessToken.value)
+    localStorage.setItem('refreshToken', refreshToken.value)
   }
 
-  function setUser(payload) {
-    role.value = payload.role || ''
-    userName.value = payload.name || ''
+  function setUser(data) {
+    const user = data.user
 
-    if (['admin', 'manager', 'sales', 'warehouse'].includes(role.value)) {
-      hireDate.value = payload.hireDate || ''
-    } else {
-      userEmail.value = payload.email || ''
-      userPhone.value = payload.phone || ''
-      userAddress.value = payload.address || ''
-      points.value = payload.points || 0
-    }
+    role.value = (user.employee_type || 'customer').toLowerCase()
+    userName.value = `${user.first_name} ${user.last_name}`
+    userEmail.value = user.email
+    userPhone.value = user.phone
+    userAddress.value = user.address
+    hiredDate.value = user.hired_at
+    points.value = user.loyalty_points || 0
+
+    accessToken.value = data.accessToken
+    refreshToken.value = data.refreshToken
 
     saveToLocalStorage()
   }
 
-  function loadTestUser() {
-    const testUser = {
-      role: 'warehouse',
-      name: 'Lionel Messi',
-      email: 'lionelmessi@example.com',
-      phone: '0123456789',
-      address: '123 Đường ABC, TP.HCM',
-      points: 120,
-      hireDate: '2022-07-01',
-    }
-    setUser(testUser)
-  }
-
-  async function login(username, password) {
+  async function login(identifier, password) {
     try {
-      // const response = await api.post('/login', { username, password })
-      // const data = response.data
-      // setUser(data)
-
-      throw new Error('Simulate no backend')
-    } catch (error) {
-      console.warn('Using test user due to backend not available:', error)
-
-      const testUser = {
-        role: username === 'warehouse' ? 'warehouse' :
-              username === 'admin' ? 'admin' :
-              username === 'manager' ? 'manager' :
-              username === 'sales' ? 'sales' :
-              username === 'customer' ? 'customer' : 'customer',
-        name: username === 'admin' ? 'Nguyễn Văn Admin' :
-              username === 'manager' ? 'Trần Thị Quản Lý' :
-              username === 'sales' ? 'Trần Thị Bán Hàng' :
-              username === 'warehouse' ? 'Phạm Văn Kho' :
-              username === 'customer' ? 'Phạm Thị Khách' :
-              username || 'Test User',
-        email: username === 'sales' ? 'sales@supermarket.com' :
-               username === 'customer' ? 'customer@example.com' :
-               username + '@supermarket.com',
-        phone: '0123456789',
-        address: '123 Đường ABC, TP.HCM',
-        points: username === 'customer' ? 2450 : 0,
-        hireDate: '2023-01-15',
+      const response = await api.post('/api/v1/auth/login', {
+        identifier,
+        password,
+      })
+      console.log(response.data)
+      if (response.data?.success) {
+        setUser(response.data.data)
+        return true
+      } else {
+        return false
       }
-
-      setUser(testUser)
-      return true
+    } catch (error) {
+      console.error('Login error:', error)
+      alert(error.response?.data?.message || 'Đăng nhập thất bại!')
+      return false
     }
   }
 
@@ -103,9 +80,43 @@ export const useMainStore = defineStore('main', () => {
     userEmail.value = ''
     userPhone.value = ''
     userAddress.value = ''
-    hireDate.value = ''
     points.value = 0
+    accessToken.value = ''
+    refreshToken.value = ''
+
     localStorage.removeItem('user')
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+  }
+
+  function isAccessTokenExpired() {
+    if (!accessToken.value) return true
+    try {
+      const decoded = jwtDecode(accessToken.value)
+      return Date.now() >= decoded.exp * 1000
+    } catch {
+      return true
+    }
+  }
+
+  async function refreshAccessToken() {
+    if (!refreshToken.value) throw new Error('No refresh token available')
+    try {
+      const res = await api.post('/api/v1/auth/refresh', {
+        refreshToken: refreshToken.value,
+      })
+      if (res.data?.success) {
+        accessToken.value = res.data.data.accessToken
+        refreshToken.value = res.data.data.refreshToken
+        saveToLocalStorage()
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Refresh token failed', err)
+      logout()
+      return false
+    }
   }
 
   return {
@@ -114,11 +125,13 @@ export const useMainStore = defineStore('main', () => {
     userEmail,
     userPhone,
     userAddress,
-    hireDate,
+    hiredDate,
     points,
     userAvatar,
     setUser,
     login,
     logout,
+    isAccessTokenExpired,
+    refreshAccessToken,
   }
 })
