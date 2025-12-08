@@ -6,28 +6,33 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ImportResponse {
+public class WarehouseExportResponse {
     @JsonProperty("details_id")
     private Long detailsId;
-
-    private String supplier;
-
-    @JsonProperty("import_date")
-    private LocalDateTime importDate;
-
-    @JsonProperty("unit_price")
-    private BigDecimal unitPrice;
 
     @JsonProperty("warehouse_id")
     private Long warehouseId;
 
+    @JsonProperty("warehouse_name")
+    private String warehouseName;
+
+    private String reason;
+
+    @JsonProperty("export_date")
+    private LocalDateTime exportDate;
+
     @JsonProperty("employee_name")
     private String employeeName;
+
+    @JsonProperty("total_quantity")
+    private Integer totalQuantity;
+
+    private List<ExportItemResponse> items;
 }

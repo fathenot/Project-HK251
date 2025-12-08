@@ -2,7 +2,6 @@ package com.example.supermarket.service;
 
 import com.example.supermarket.dto.request.product.ProductVariantRequest;
 import com.example.supermarket.dto.response.product.ProductVariantDetailResponse;
-import com.example.supermarket.entity.ProductVariant;
 
 import java.util.List;
 

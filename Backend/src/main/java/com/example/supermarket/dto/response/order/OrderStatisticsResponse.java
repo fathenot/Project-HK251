@@ -13,8 +13,9 @@ import java.math.BigDecimal;
 @Builder
 public class OrderStatisticsResponse {
     private Long totalOrders;
-    private BigDecimal totalRevenue;
+    private Double totalRevenue;
     private Long pendingOrders;
     private Long completedOrders;
-    private BigDecimal averageOrderValue;
+    private Long cancelledOrders;
+    private Double averageOrderValue;
 }

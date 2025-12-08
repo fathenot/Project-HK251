@@ -1,9 +1,7 @@
 package com.example.supermarket.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.example.supermarket.entity.compositePk.BatchExportedId;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
@@ -12,12 +10,14 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@IdClass(BatchExportedId.class)
 public class BatchExported {
 
     @Id
     @Column(name = "batch_export_id")
     private Long batchExportId;
 
+    @Id
     @Column(name = "export_details_id")
     private Long exportDetailsId;
 
