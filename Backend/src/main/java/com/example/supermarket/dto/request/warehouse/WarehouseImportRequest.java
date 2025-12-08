@@ -1,6 +1,8 @@
 package com.example.supermarket.dto.request.warehouse;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,10 +14,12 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ImportRequest {
-    @NotNull(message = "Warehouse ID is required")
+public class WarehouseImportRequest {
+
+    @NotNull(message = "Warehouse Id is required")
     private Long warehouseId;
 
+    @NotNull(message = "Supplier is required")
     private String supplier;
 
     @NotNull(message = "Unit price is required")
@@ -23,7 +27,9 @@ public class ImportRequest {
     private BigDecimal unitPrice;
 
     @NotNull(message = "Employee ID is required")
-    private Long employeeImport;
+    private Long employeeImportId;
 
-    private List<Long> batchIds;
+    @NotEmpty(message = "Import items cannot be empty")
+    @Valid
+    private List<ImportItemRequest> items;
 }

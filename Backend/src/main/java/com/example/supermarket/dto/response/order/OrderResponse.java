@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -28,7 +27,7 @@ public class OrderResponse {
     private String status;
 
     @JsonProperty("total_money")
-    private BigDecimal totalMoney;
+    private Double totalMoney;
 
     @JsonProperty("total_items")
     private Integer totalItems;

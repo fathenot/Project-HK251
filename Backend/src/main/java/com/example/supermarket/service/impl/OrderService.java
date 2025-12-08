@@ -7,17 +7,13 @@ import com.example.supermarket.dto.request.order.OrderUpdateStatusRequest;
 import com.example.supermarket.dto.response.order.OrderDetailResponse;
 import com.example.supermarket.dto.response.order.OrderResponse;
 import com.example.supermarket.dto.response.order.OrderStatisticsResponse;
-import com.example.supermarket.entity.Customer;
-import com.example.supermarket.entity.Order;
-import com.example.supermarket.entity.OrderDetail;
-import com.example.supermarket.entity.Product;
+import com.example.supermarket.entity.*;
+import com.example.supermarket.entity.compositePk.OrderDetailID;
+import com.example.supermarket.entity.compositePk.ProductStoreID;
 import com.example.supermarket.exception.BadRequestError;
 import com.example.supermarket.exception.NotFoundError;
 import com.example.supermarket.mapper.OrderMapper;
-import com.example.supermarket.repository.CustomerRepository;
-import com.example.supermarket.repository.OrderDetailRepository;
-import com.example.supermarket.repository.OrderRepository;
-import com.example.supermarket.repository.ProductRepository;
+import com.example.supermarket.repository.*;
 import com.example.supermarket.service.OrderServiceI;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +24,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -41,13 +38,14 @@ public class OrderService implements OrderServiceI {
     private final OrderDetailRepository orderDetailRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final ProductStoreRepository productStoreRepository;
     private final OrderMapper orderMapper;
 
     private static final int POINTS_PER_DOLLAR = 1; // 1 point per dollar spent
-    private static final BigDecimal POINT_VALUE = new BigDecimal("0.01"); // 1 point = $0.01
+    private static final double POINT_VALUE = 0.01; // 1 point = $0.01
 
     /**
-     * Create new order
+     * Create new order with inventory management
      */
     @Transactional
     public OrderDetailResponse createOrder(OrderCreateRequest request) {
@@ -57,35 +55,64 @@ public class OrderService implements OrderServiceI {
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new NotFoundError("Customer not found"));
 
-        // Calculate total money
-        BigDecimal totalMoney = BigDecimal.ZERO;
+        // Validate product availability and calculate total
+        double totalMoney = 0.0;
         List<OrderDetail> orderDetails = new ArrayList<>();
+        Map<Long, Integer> productQuantityMap = new HashMap<>();
 
         for (var itemRequest : request.getItems()) {
             Product product = productRepository.findById(itemRequest.getProductId())
                     .orElseThrow(() -> new NotFoundError("Product not found with ID: " + itemRequest.getProductId()));
 
-            BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
-            totalMoney = totalMoney.add(subTotal);
+            // Check if we need to specify storeId (for now, we'll use store 1 as default)
+            // In production, this should come from the request or user's location
+            Long defaultStoreId = 1L;
 
-            OrderDetail detail = OrderDetail.builder()
-                    .quantity(itemRequest.getQuantity())
-                    .subtotal(subTotal.floatValue())
+            // Check product availability in store
+            ProductStoreID productStoreId = ProductStoreID.builder()
+                    .productId(product.getId())
+                    .storeId(defaultStoreId)
                     .build();
 
-            detail.setProductId(product.getId());
-            orderDetails.add(detail);
+            ProductStore productStore = productStoreRepository.findById(productStoreId)
+                    .orElseThrow(() -> new BadRequestError("Product not available in store"));
+
+            // Check if enough stock
+            if (productStore.getQuantityInStock() < itemRequest.getQuantity()) {
+                throw new BadRequestError(
+                        "Insufficient stock for product: " + product.getName() +
+                                ". Available: " + productStore.getQuantityInStock() +
+                                ", Requested: " + itemRequest.getQuantity()
+                );
+            }
+
+            // Calculate subtotal
+            float subTotal = product.getPrice().floatValue() * itemRequest.getQuantity();
+            totalMoney += subTotal;
+
+            // Store for later inventory update
+            productQuantityMap.put(product.getId(), itemRequest.getQuantity());
+
+            // Create order detail (will set order later)
+            OrderDetail orderDetail = OrderDetail.builder()
+                    .id(new OrderDetailID())
+                    .quantity(itemRequest.getQuantity())
+                    .subtotal(subTotal)
+                    .build();
+            orderDetail.setProductId(product.getId());
+
+            orderDetails.add(orderDetail);
         }
 
         // Apply loyalty points discount if requested
         Integer pointsUsed = 0;
         if (request.getUsePoints() && customer.getLoyaltyPoints() > 0) {
-            BigDecimal discount = BigDecimal.valueOf(customer.getLoyaltyPoints()).multiply(POINT_VALUE);
-            if (discount.compareTo(totalMoney) > 0) {
+            double discount = customer.getLoyaltyPoints() * POINT_VALUE;
+            if (discount > totalMoney) {
                 discount = totalMoney;
             }
-            totalMoney = totalMoney.subtract(discount);
-            pointsUsed = discount.divide(POINT_VALUE).intValue();
+            totalMoney -= discount;
+            pointsUsed = (int)(discount / POINT_VALUE);
 
             // Deduct points from customer
             customer.setLoyaltyPoints(customer.getLoyaltyPoints() - pointsUsed);
@@ -96,23 +123,42 @@ public class OrderService implements OrderServiceI {
                 .customerId(customer.getId())
                 .createdAt(LocalDateTime.now())
                 .status("Pending")
-                .totalMoney(totalMoney.doubleValue())
+                .totalMoney(totalMoney)
                 .build();
 
         order = orderRepository.save(order);
 
-        // Save order details
+        // Save order details with order reference
         for (OrderDetail detail : orderDetails) {
-            detail.getId().setOrderID(order.getId()); // Set orderId vào composite key
+            detail.getId().setOrderID(order.getId());
             orderDetailRepository.save(detail);
         }
 
+        // *** CRITICAL: REDUCE INVENTORY IMMEDIATELY ***
+        Long defaultStoreId = 1L;
+        for (Map.Entry<Long, Integer> entry : productQuantityMap.entrySet()) {
+            Long productId = entry.getKey();
+            Integer quantity = entry.getValue();
+
+            ProductStoreID productStoreId = ProductStoreID.builder()
+                    .productId(productId)
+                    .storeId(defaultStoreId)
+                    .build();
+
+            ProductStore productStore = productStoreRepository.findById(productStoreId).get();
+            productStore.setQuantityInStock(productStore.getQuantityInStock() - quantity);
+            productStoreRepository.save(productStore);
+
+            log.info("Reduced inventory: Product {} by {} units. Remaining: {}",
+                    productId, quantity, productStore.getQuantityInStock());
+        }
+
         // Calculate and add loyalty points earned
-        Integer pointsEarned = totalMoney.intValue() * POINTS_PER_DOLLAR;
+        Integer pointsEarned = (int)(totalMoney * POINTS_PER_DOLLAR);
         customer.setLoyaltyPoints(customer.getLoyaltyPoints() + pointsEarned);
         customerRepository.save(customer);
 
-        log.info("Order created successfully with ID: {}", order.getId());
+        log.info("Order created successfully with ID: {}. Inventory updated.", order.getId());
 
         return orderMapper.toDetailResponse(order, orderDetails, pointsEarned, pointsUsed);
     }
@@ -129,7 +175,7 @@ public class OrderService implements OrderServiceI {
 
         List<OrderDetail> orderDetails = orderDetailRepository.findByIdOrderID(id);
 
-        Integer pointsEarned = order.getTotalMoney().intValue() * POINTS_PER_DOLLAR;
+        Integer pointsEarned = (int)(order.getTotalMoney() * POINTS_PER_DOLLAR);
 
         return orderMapper.toDetailResponse(order, orderDetails, pointsEarned, 0);
     }
@@ -149,7 +195,6 @@ public class OrderService implements OrderServiceI {
 
         Page<Order> orderPage;
 
-        // Apply filters
         if (request.getCustomerId() != null && request.getStatus() != null) {
             orderPage = orderRepository.findByCustomerIdAndStatus(
                     request.getCustomerId(),
@@ -173,8 +218,20 @@ public class OrderService implements OrderServiceI {
         List<OrderResponse> content = orderPage.getContent().stream()
                 .map(order -> {
                     Long totalItems = orderDetailRepository.countByIdOrderID(order.getId());
-                    Integer pointsEarned = order.getTotalMoney().intValue() * POINTS_PER_DOLLAR;
-                    return orderMapper.toResponse(order, totalItems.intValue(), pointsEarned);
+                    Integer pointsEarned = (int)(order.getTotalMoney() * POINTS_PER_DOLLAR);
+                    Customer customer = customerRepository.findById(order.getCustomerId()).orElse(null);
+                    String customerName = customer != null ? customer.getFirstName() + " " + customer.getLastName() : "Unknown";
+
+                    return OrderResponse.builder()
+                            .id(order.getId())
+                            .customerId(order.getCustomerId())
+                            .customerName(customerName)
+                            .createdAt(order.getCreatedAt())
+                            .status(order.getStatus())
+                            .totalMoney(order.getTotalMoney())
+                            .totalItems(totalItems.intValue())
+                            .pointsEarned(pointsEarned)
+                            .build();
                 })
                 .toList();
 
@@ -206,7 +263,7 @@ public class OrderService implements OrderServiceI {
     }
 
     /**
-     * Update order status
+     * Update order status with inventory restoration on cancel
      */
     @Transactional
     public OrderResponse updateOrderStatus(Long id, OrderUpdateStatusRequest request) {
@@ -215,12 +272,18 @@ public class OrderService implements OrderServiceI {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundError("Order not found with ID: " + id));
 
-        // Validate status transition
         String currentStatus = order.getStatus();
         String newStatus = request.getStatus();
 
+        // Validate status transition
         if (!isValidStatusTransition(currentStatus, newStatus)) {
             throw new BadRequestError("Invalid status transition from " + currentStatus + " to " + newStatus);
+        }
+
+        // *** RESTORE INVENTORY IF CANCELLED ***
+        if (newStatus.equals("Cancelled") && !currentStatus.equals("Cancelled")) {
+            restoreInventory(order.getId());
+            log.info("Inventory restored for cancelled order: {}", id);
         }
 
         order.setStatus(newStatus);
@@ -229,13 +292,24 @@ public class OrderService implements OrderServiceI {
         log.info("Order status updated successfully");
 
         Long totalItems = orderDetailRepository.countByIdOrderID(id);
-        Integer pointsEarned = order.getTotalMoney().intValue() * POINTS_PER_DOLLAR;
+        Integer pointsEarned = (int)(order.getTotalMoney() * POINTS_PER_DOLLAR);
+        Customer customer = customerRepository.findById(order.getCustomerId()).orElse(null);
+        String customerName = customer != null ? customer.getFirstName() + " " + customer.getLastName() : "Unknown";
 
-        return orderMapper.toResponse(order, totalItems.intValue(), pointsEarned);
+        return OrderResponse.builder()
+                .id(order.getId())
+                .customerId(order.getCustomerId())
+                .customerName(customerName)
+                .createdAt(order.getCreatedAt())
+                .status(order.getStatus())
+                .totalMoney(order.getTotalMoney())
+                .totalItems(totalItems.intValue())
+                .pointsEarned(pointsEarned)
+                .build();
     }
 
     /**
-     * Cancel order
+     * Cancel order and restore inventory
      */
     @Transactional
     public void cancelOrder(Long id) {
@@ -248,13 +322,14 @@ public class OrderService implements OrderServiceI {
             throw new BadRequestError("Only pending orders can be cancelled");
         }
 
+        // Restore inventory
+        restoreInventory(order.getId());
+
+        // Update status
         order.setStatus("Cancelled");
-
-        // Refund loyalty points if used
-        // This would require storing points used, which we should add to Order entity
-
         orderRepository.save(order);
-        log.info("Order cancelled successfully");
+
+        log.info("Order cancelled and inventory restored successfully");
     }
 
     /**
@@ -271,8 +346,38 @@ public class OrderService implements OrderServiceI {
             throw new BadRequestError("Cannot delete order with status: " + order.getStatus());
         }
 
+        // If order was pending, restore inventory before delete
+        if (order.getStatus().equals("Pending")) {
+            restoreInventory(order.getId());
+        }
+
         orderRepository.delete(order);
         log.info("Order deleted successfully");
+    }
+
+    /**
+     * Restore inventory when order is cancelled
+     */
+    private void restoreInventory(Long orderId) {
+        List<OrderDetail> orderDetails = orderDetailRepository.findByIdOrderID(orderId);
+        Long defaultStoreId = 1L; // Should match the store used during order creation
+
+        for (OrderDetail detail : orderDetails) {
+            ProductStoreID productStoreId = ProductStoreID.builder()
+                    .productId(detail.getProductId())
+                    .storeId(defaultStoreId)
+                    .build();
+
+            ProductStore productStore = productStoreRepository.findById(productStoreId)
+                    .orElseThrow(() -> new NotFoundError("Product store not found"));
+
+            // Add back the quantity
+            productStore.setQuantityInStock(productStore.getQuantityInStock() + detail.getQuantity());
+            productStoreRepository.save(productStore);
+
+            log.info("Restored inventory: Product {} by {} units. New quantity: {}",
+                    detail.getProductId(), detail.getQuantity(), productStore.getQuantityInStock());
+        }
     }
 
     /**
@@ -282,7 +387,6 @@ public class OrderService implements OrderServiceI {
         return switch (currentStatus) {
             case "Pending" -> newStatus.equals("Processing") || newStatus.equals("Cancelled");
             case "Processing" -> newStatus.equals("Completed") || newStatus.equals("Cancelled");
-            case "Completed", "Cancelled" -> false;
             default -> false;
         };
     }
@@ -295,19 +399,19 @@ public class OrderService implements OrderServiceI {
         log.info("Getting order statistics from {} to {}", fromDate, toDate);
 
         Long totalOrders = orderRepository.countByCreatedAtBetween(fromDate, toDate);
-        BigDecimal totalRevenue = orderRepository.sumTotalMoneyByCreatedAtBetween(fromDate, toDate);
+        Double totalRevenue = orderRepository.sumTotalMoneyByCreatedAtBetween(fromDate, toDate);
 
         Long pendingOrders = orderRepository.countByStatusAndCreatedAtBetween("Pending", fromDate, toDate);
         Long completedOrders = orderRepository.countByStatusAndCreatedAtBetween("Completed", fromDate, toDate);
+        Long cancelledOrders = orderRepository.countByStatusAndCreatedAtBetween("Cancelled", fromDate, toDate);
 
         return OrderStatisticsResponse.builder()
                 .totalOrders(totalOrders)
-                .totalRevenue(totalRevenue != null ? totalRevenue : BigDecimal.ZERO)
+                .totalRevenue(totalRevenue != null ? totalRevenue : 0.0)
                 .pendingOrders(pendingOrders)
                 .completedOrders(completedOrders)
-                .averageOrderValue(totalOrders > 0 ?
-                        (totalRevenue != null ? totalRevenue : BigDecimal.ZERO).divide(BigDecimal.valueOf(totalOrders), 2, BigDecimal.ROUND_HALF_UP)
-                        : BigDecimal.ZERO)
+                .cancelledOrders(cancelledOrders)
+                .averageOrderValue(totalOrders > 0 ? (totalRevenue != null ? totalRevenue : 0.0) / totalOrders : 0.0)
                 .build();
     }
 }

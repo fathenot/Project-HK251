@@ -35,7 +35,7 @@ public class OrderDetailResponse {
     private String status;
 
     @JsonProperty("total_money")
-    private BigDecimal totalMoney;
+    private Double totalMoney;
 
     @JsonProperty("points_earned")
     private Integer pointsEarned;

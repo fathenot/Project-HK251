@@ -11,11 +11,7 @@ import java.util.List;
 
 @Repository
 public interface BatchRepository extends JpaRepository<Batch, Long> {
-    List<Batch> findByProductId(Long productId);
-    List<Batch> findByVariantId(Long variantId);
     List<Batch> findByWarehouseId(Long warehouseId);
-    Page<Batch> findByWarehouseId(Long warehouseId, Pageable pageable);
 
-    List<Batch> findByExpiryDateBefore(LocalDate date);
     Page<Batch> findByExpiryDateBefore(LocalDate date, Pageable pageable);
 }

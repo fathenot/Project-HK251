@@ -27,7 +27,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Double sumTotalMoneyByCustomerId(@Param("customerId") Long customerId);
 
     @Query("SELECT SUM(o.totalMoney) FROM Order o WHERE o.createdAt BETWEEN :fromDate AND :toDate")
-    BigDecimal sumTotalMoneyByCreatedAtBetween(
+    Double sumTotalMoneyByCreatedAtBetween(
             @Param("fromDate") LocalDateTime fromDate,
             @Param("toDate") LocalDateTime toDate
     );
