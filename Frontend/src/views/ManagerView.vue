@@ -17,8 +17,7 @@ import CardBoxWidget from '@/components/CardBoxWidget.vue'
 import CardBox from '@/components/CardBox.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
-import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.vue'
-import SectionTitleLineWithoutButton from '@/components/SectionTitleLineWithoutButton.vue'
+import SectionTitleLine from '@/components/SectionTitleLine.vue'
 
 // Dashboard data
 const dashboardData = ref({
@@ -57,7 +56,10 @@ const fetchDashboard = async () => {
     })
     const products = productsRes.data.data.content || []
     dashboardData.value.canhBaoTonKho = products.length
-    dashboardData.value.tongTonKho = products.reduce((sum, p) => sum + (p.available_quantity || 0), 0)
+    dashboardData.value.tongTonKho = products.reduce(
+      (sum, p) => sum + (p.available_quantity || 0),
+      0,
+    )
 
     // 3. Cảnh báo lô hết hạn
     const expiredRes = await api.get('/batches/expired', {
@@ -118,7 +120,12 @@ onMounted(() => {
 <template>
   <LayoutAuthenticated>
     <SectionMain>
-      <SectionTitleLineWithoutButton :icon="mdiChartTimelineVariant" title="Tổng quan" main />
+      <SectionTitleLine
+        :icon="mdiChartTimelineVariant"
+        title="Tổng quan"
+        main
+        :has-button="false"
+      />
 
       <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <CardBoxWidget
@@ -158,9 +165,9 @@ onMounted(() => {
         />
       </div>
 
-      <SectionTitleLineWithButton :icon="mdiChartPie" title="Biểu đồ tuần" main>
+      <SectionTitleLine :icon="mdiChartPie" title="Biểu đồ tuần" main>
         <BaseButton :icon="mdiReload" color="whiteDark" @click="fetchChart" />
-      </SectionTitleLineWithButton>
+      </SectionTitleLine>
 
       <CardBox class="mb-6">
         <div v-if="chartData">

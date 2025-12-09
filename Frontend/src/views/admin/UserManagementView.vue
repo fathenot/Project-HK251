@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
 import SectionMain from '@/components/SectionMain.vue'
-import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.vue'
+import SectionTitleLineWithButton from '@/components/SectionTitleLine.vue'
 import CardBox from '@/components/CardBox.vue'
 import CardBoxModal from '@/components/CardBoxModal.vue'
 import BaseButton from '@/components/BaseButton.vue'
@@ -181,13 +181,18 @@ onMounted(() => {
               <td data-label="Họ tên">{{ user.fullName }}</td>
               <td data-label="Vai trò">
                 <span
-                  class="px-2 py-1 text-xs rounded-full"
+                  class="rounded-full px-2 py-1 text-xs"
                   :class="{
-                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': user.role === 'admin',
-                    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': user.role === 'manager',
-                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': user.role === 'sales',
-                    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200': user.role === 'warehouse',
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200': user.role === 'customer',
+                    'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200':
+                      user.role === 'admin',
+                    'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200':
+                      user.role === 'manager',
+                    'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200':
+                      user.role === 'sales',
+                    'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200':
+                      user.role === 'warehouse',
+                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200':
+                      user.role === 'customer',
                   }"
                 >
                   {{ getRoleLabel(user.role) }}
@@ -195,14 +200,9 @@ onMounted(() => {
               </td>
               <td data-label="Số điện thoại">{{ user.phone }}</td>
               <td data-label="Ngày tạo">{{ user.createdAt }}</td>
-              <td class="before:hidden lg:w-1 whitespace-nowrap">
+              <td class="whitespace-nowrap before:hidden lg:w-1">
                 <BaseButtons type="justify-start lg:justify-end" no-wrap>
-                  <BaseButton
-                    :icon="mdiPencil"
-                    color="info"
-                    small
-                    @click="openEditModal(user)"
-                  />
+                  <BaseButton :icon="mdiPencil" color="info" small @click="openEditModal(user)" />
                   <BaseButton
                     :icon="mdiDelete"
                     color="danger"
@@ -247,10 +247,11 @@ onMounted(() => {
         has-cancel
         @confirm="deleteUser"
       >
-        <p>Bạn có chắc chắn muốn xóa người dùng <strong>{{ selectedUser?.fullName }}</strong>?</p>
+        <p>
+          Bạn có chắc chắn muốn xóa người dùng <strong>{{ selectedUser?.fullName }}</strong
+          >?
+        </p>
       </CardBoxModal>
     </SectionMain>
   </LayoutAuthenticated>
 </template>
-
-

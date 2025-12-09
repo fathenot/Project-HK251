@@ -9,7 +9,7 @@ import {
   mdiStore,
   mdiAccountGroup,
   mdiAccount,
-  mdiTag,
+  mdiSale,
   mdiChartBar,
   mdiCashRegister,
   mdiCog,
@@ -28,16 +28,16 @@ export default {
   manager: [
     { to: '/manager-dashboard', icon: mdiMonitor, label: 'Trang chính' },
     {
-      label: 'Tra cứu',
+      label: 'Quản lý',
       icon: mdiClipboardCheck,
       menu: [
         { to: '/search-employee', icon: mdiAccountGroup, label: 'Nhân viên' },
         { to: '/manager-product', icon: mdiPackageVariant, label: 'Hàng hóa' },
-        { to: '/search-customer', icon: mdiAccount, label: 'Khách hàng' },
+        { to: '/store-info', icon: mdiStore, label: 'Cửa hàng' },
+        { to: '/discount-management', icon: mdiSale, label: 'Quản lý ưu đãi giảm giá' },
       ],
     },
-    { to: '/store-info', icon: mdiStore, label: 'Thông tin gian hàng' },
-    { to: '/discount-management', icon: mdiTag, label: 'Quản lý ưu đãi giảm giá' },
+    { to: '/search-customer', icon: mdiAccount, label: 'Tra cứu khách hàng' },
   ],
 
   warehouse: [
@@ -53,7 +53,7 @@ export default {
     },
     { to: '/transfer', icon: mdiArrowRight, label: 'Chuyển hàng' },
     { to: '/warehouses', icon: mdiWarehouse, label: 'Quản lí kho' },
-    { to: '/store-info', icon: mdiStore, label: 'Thông tin gian hàng' },
+    // { to: '/store-info', icon: mdiStore, label: 'Thông tin gian hàng' },
   ],
 
   sales: [

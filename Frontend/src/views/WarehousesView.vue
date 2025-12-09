@@ -11,39 +11,27 @@ import { api } from '@/plugins/axios'
 
 const sampleLots = [
   {
-    id: 'LO001',
     productId: 'SP001',
     product: 'Sản phẩm 1',
     warehouse: 'Kho A',
     quantity: 8,
-    minQuantity: 10,
     expiry: '2026-05-01',
-    manufacturer: 'NSX A',
-    supplier: 'NCC X',
     status: 'low_stock',
   },
   {
-    id: 'LO002',
     productId: 'SP002',
     product: 'Sản phẩm 2',
     warehouse: 'Kho B',
     quantity: 20,
-    minQuantity: 15,
     expiry: '2025-12-01',
-    manufacturer: 'NSX B',
-    supplier: 'NCC Y',
     status: 'normal',
   },
   {
-    id: 'LO003',
     productId: 'SP003',
     product: 'Sản phẩm 3',
     warehouse: 'Kho A',
     quantity: 15,
-    minQuantity: 10,
     expiry: '2025-11-20',
-    manufacturer: 'NSX C',
-    supplier: 'NCC Z',
     status: 'expiring',
   },
 ]
@@ -77,6 +65,10 @@ const quantityOptions = [
   { value: 'normal', label: 'Trên mức tối thiểu' },
 ]
 
+const getTokenHeader = () => ({
+  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
+})
+
 const filterLots = () => {
   let results = lots.value
 
@@ -84,10 +76,9 @@ const filterLots = () => {
     const q = searchQuery.value.toLowerCase()
     results = results.filter(
       (l) =>
-        l.id.toLowerCase().includes(q) ||
         l.productId.toLowerCase().includes(q) ||
         l.product.toLowerCase().includes(q) ||
-        l.warehouse.toLowerCase().includes(q),
+        l.warehouse.toLowerCase().includes(q)
     )
   }
 
@@ -97,14 +88,6 @@ const filterLots = () => {
 
   if (filterWarehouse.value !== 'all') {
     results = results.filter((lot) => lot.warehouse === filterWarehouse.value)
-  }
-
-  if (filterQuantity.value !== 'all') {
-    if (filterQuantity.value === 'low') {
-      results = results.filter((lot) => lot.quantity <= lot.minQuantity)
-    } else {
-      results = results.filter((lot) => lot.quantity > lot.minQuantity)
-    }
   }
 
   filteredLots.value = results
@@ -123,19 +106,15 @@ const getStatusLabel = (statusValue) => {
 }
 
 const getWarning = (lot) => {
-  const today = new Date()
-  const expiryDate = new Date(lot.expiry)
-  const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24))
-
-  if (lot.quantity <= lot.minQuantity) return 'Mức tồn kho thấp'
-  if (diffDays <= 30) return 'Sắp hết hạn'
+  if (lot.status === 'low_stock') return 'Tồn kho thấp'
+  if (lot.status === 'expiring') return 'Sắp hết hạn'
   return 'Bình thường'
 }
 
 const getWarningClass = (lot) => {
   const warning = getWarning(lot)
   if (warning === 'Bình thường') return 'status-normal'
-  if (warning === 'Mức tồn kho thấp') return 'status-warning'
+  if (warning === 'Tồn kho thấp') return 'status-warning'
   return 'status-danger'
 }
 
@@ -149,12 +128,64 @@ const selectedLot = ref(null)
 
 const fetchLots = async () => {
   try {
-    const res = await api.get('/lots')
-    lots.value = res.data
+    lots.value = []
+
+    // 1️⃣ Lấy danh sách sản phẩm tồn kho thấp
+    const lowStockRes = await api.get('/products/low-stock', {
+      headers: getTokenHeader(),
+    })
+    const lowStockProducts = lowStockRes.data.data.content || []
+
+    const lowStockLots = lowStockProducts.map(p => ({
+      productId: p.id,
+      product: p.name,
+      warehouse: 'Kho A',
+      quantity: p.available_quantity,
+      expiry: null,
+      status: 'low_stock',
+    }))
+
+    // 2️⃣ Lấy danh sách lô hàng hết hạn
+    const expiredRes = await api.get('/batches/expired', {
+      headers: getTokenHeader(),
+      params: { page: 0, size: 1000 },
+    })
+    const expiredBatches = expiredRes.data.data.content || []
+
+    const expiringLots = expiredBatches.map(b => ({
+      productId: b.product_id,
+      product: b.product_name,
+      warehouse: b.warehouse_name,
+      quantity: b.quantity_available,
+      expiry: b.expiry_date,
+      status: 'expiring',
+    }))
+
+    // 3️⃣ Lấy các sản phẩm còn lại (bình thường)
+    const allProductsRes = await api.get('/products', {
+      headers: getTokenHeader(),
+      params: { page: 0, size: 1000 },
+    })
+    const allProducts = allProductsRes.data.data.content || []
+
+    const normalLots = allProducts
+      .filter(p => !lowStockProducts.find(ls => ls.id === p.id))
+      .map(p => ({
+        productId: p.id,
+        product: p.name,
+        warehouse: 'Kho A',
+        quantity: p.available_quantity,
+        expiry: null,
+        status: 'normal',
+      }))
+
+    // 4️⃣ Gộp tất cả
+    lots.value = [...lowStockLots, ...expiringLots, ...normalLots]
+
+    filterLots()
   } catch (err) {
     console.error('Lỗi fetch lô hàng, dùng dữ liệu mẫu:', err)
     lots.value = sampleLots
-  } finally {
     filterLots()
   }
 }
@@ -163,7 +194,6 @@ const activeFiltersCount = computed(() => {
   let count = 0
   if (filterStatus.value !== 'all') count++
   if (filterWarehouse.value !== 'all') count++
-  if (filterQuantity.value !== 'all') count++
   return count
 })
 
@@ -175,12 +205,9 @@ onMounted(fetchLots)
     <SectionMain>
       <SectionTitleLineWithoutButton :icon="mdiCubeOutline" title="Quản lý kho" />
 
-      <!-- Search and Filter Header -->
       <div class="controls-header">
-        <!-- Combined Search and Filter Box -->
         <CardBox class="search-filter-container">
           <div class="search-filter-wrapper">
-            <!-- Search Section -->
             <div class="search-section">
               <div class="search-wrapper">
                 <BaseIcon :path="mdiMagnify" class="search-icon" />
@@ -188,11 +215,10 @@ onMounted(fetchLots)
                   v-model="searchQuery"
                   @input="filterLots"
                   class="search-input"
-                  placeholder="Tìm kiếm theo Mã lô, Mã sản phẩm, Sản phẩm, Kho"
+                  placeholder="Tìm kiếm theo Mã sản phẩm, Sản phẩm, Kho"
                 />
               </div>
 
-              <!-- Filter Toggle Button -->
               <button
                 class="filter-toggle-btn"
                 :class="{ active: showFilters }"
@@ -206,7 +232,6 @@ onMounted(fetchLots)
               </button>
             </div>
 
-            <!-- Filters Panel - Show inside the same CardBox -->
             <div v-if="showFilters" class="filters-panel-inline">
               <div class="filters-header">
                 <h3 class="filters-title">Bộ lọc</h3>
@@ -242,38 +267,22 @@ onMounted(fetchLots)
                     </option>
                   </select>
                 </div>
-
-                <div class="filter-group">
-                  <label class="filter-label">Số lượng</label>
-                  <select v-model="filterQuantity" @change="filterLots" class="filter-select">
-                    <option
-                      v-for="option in quantityOptions"
-                      :key="option.value"
-                      :value="option.value"
-                    >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </div>
               </div>
             </div>
           </div>
         </CardBox>
       </div>
 
-      <!-- Results Summary -->
       <div class="results-summary">
         <span class="results-text">
           Hiển thị <strong>{{ filteredLots.length }}</strong> lô hàng
         </span>
       </div>
 
-      <!-- Table Container -->
       <div class="table-wrapper">
         <table class="inventory-table">
           <thead>
             <tr>
-              <th class="col-lot">Mã lô</th>
               <th class="col-product-id">Mã sản phẩm</th>
               <th class="col-product">Sản phẩm</th>
               <th class="col-warehouse">Kho</th>
@@ -282,32 +291,20 @@ onMounted(fetchLots)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="lot in filteredLots" :key="lot.id" class="table-row" @click="viewLot(lot)">
-              <td class="cell-lot">{{ lot.id }}</td>
+            <tr v-for="lot in filteredLots" :key="lot.productId" class="table-row" @click="viewLot(lot)">
               <td class="cell-product-id">{{ lot.productId }}</td>
               <td class="cell-product">{{ lot.product }}</td>
               <td class="cell-warehouse">{{ lot.warehouse }}</td>
-              <td class="cell-quantity">
-                <div class="quantity-display">
-                  <span class="quantity-value">{{ lot.quantity }}</span>
-                  <span class="min-quantity">/{{ lot.minQuantity }}</span>
-                </div>
-              </td>
+              <td class="cell-quantity">{{ lot.quantity }}</td>
               <td class="cell-status">
-                <span :class="['status-badge', getWarningClass(lot)]">
-                  {{ getWarning(lot) }}
-                </span>
+                <span :class="['status-badge', getWarningClass(lot)]">{{ getWarning(lot) }}</span>
               </td>
             </tr>
             <tr v-if="filteredLots.length === 0" class="no-data-row">
-              <td colspan="6" class="no-data-cell">
+              <td colspan="5" class="no-data-cell">
                 <BaseIcon :path="mdiInformation" class="no-data-icon" />
                 <p>Không có lô hàng nào được tìm thấy</p>
-                <button
-                  v-if="activeFiltersCount > 0"
-                  @click="resetFilters"
-                  class="clear-filters-btn"
-                >
+                <button v-if="activeFiltersCount > 0" @click="resetFilters" class="clear-filters-btn">
                   Xóa bộ lọc
                 </button>
               </td>
@@ -316,15 +313,11 @@ onMounted(fetchLots)
         </table>
       </div>
 
-      <CardBoxModal v-model="modalActive" title="Chi tiết lô hàng" button-label="Đóng">
+      <CardBoxModal v-model="modalActive" title="Chi tiết sản phẩm" button-label="Đóng">
         <div v-if="selectedLot" class="lot-details">
           <div class="detail-section">
             <h3 class="detail-title">Thông tin cơ bản</h3>
             <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Mã lô:</span>
-                <span class="detail-value">{{ selectedLot.id }}</span>
-              </div>
               <div class="detail-item">
                 <span class="detail-label">Mã sản phẩm:</span>
                 <span class="detail-value">{{ selectedLot.productId }}</span>
@@ -337,43 +330,17 @@ onMounted(fetchLots)
                 <span class="detail-label">Kho:</span>
                 <span class="detail-value">{{ selectedLot.warehouse }}</span>
               </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h3 class="detail-title">Thông tin tồn kho</h3>
-            <div class="detail-grid">
               <div class="detail-item">
                 <span class="detail-label">Số lượng hiện tại:</span>
                 <span class="detail-value">{{ selectedLot.quantity }}</span>
               </div>
-              <div class="detail-item">
-                <span class="detail-label">Mức tồn tối thiểu:</span>
-                <span class="detail-value">{{ selectedLot.minQuantity }}</span>
+              <div class="detail-item" v-if="selectedLot.expiry">
+                <span class="detail-label">Hạn sử dụng:</span>
+                <span class="detail-value">{{ selectedLot.expiry }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Trạng thái:</span>
-                <span :class="['status-badge', getWarningClass(selectedLot)]">
-                  {{ getWarning(selectedLot) }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-section">
-            <h3 class="detail-title">Thông tin nhà cung cấp</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Nhà sản xuất:</span>
-                <span class="detail-value">{{ selectedLot.manufacturer }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Nhà cung cấp:</span>
-                <span class="detail-value">{{ selectedLot.supplier }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Hạn sử dụng:</span>
-                <span class="detail-value">{{ selectedLot.expiry }}</span>
+                <span :class="['status-badge', getWarningClass(selectedLot)]">{{ getWarning(selectedLot) }}</span>
               </div>
             </div>
           </div>
@@ -382,6 +349,7 @@ onMounted(fetchLots)
     </SectionMain>
   </LayoutAuthenticated>
 </template>
+
 
 <style scoped>
 .controls-header {

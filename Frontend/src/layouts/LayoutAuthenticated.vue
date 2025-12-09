@@ -38,12 +38,12 @@ router.beforeEach(() => {
 const notifications = ref([])
 
 const fetchNotifications = async () => {
-  try {
-    const res = await api.get(`/notifications?role=${role}`)
-    notifications.value = res.data
-  } catch (e) {
-    console.error('Lỗi load thông báo:', e)
-  }
+  // try {
+  //   const res = await api.get(`/notifications?role=${role}`)
+  //   notifications.value = res.data
+  // } catch (e) {
+  //   console.error('Lỗi load thông báo:', e)
+  // }
 }
 
 const menuClick = (event, item) => {

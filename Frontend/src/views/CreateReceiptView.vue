@@ -29,7 +29,8 @@ const form = reactive({
 
 const addBatch = () => {
   form.batches.push({
-    product_id: '',
+    product_id: '',   // Product ID
+    variant_id: '',   // Variant ID
     product_name: '',
     quantity: '',
     unit_price: '',
@@ -58,8 +59,8 @@ const submit = async () => {
   }
 
   for (const [i, batch] of form.batches.entries()) {
-    if (!batch.product_id || !batch.product_name) {
-      formMessage.value = `Lô hàng #${i + 1}: sản phẩm và tên sản phẩm không được để trống!`;
+    if (!batch.product_id || !batch.variant_id || !batch.product_name) {
+      formMessage.value = `Lô hàng #${i + 1}: sản phẩm, variant và tên sản phẩm không được để trống!`;
       formModalActive.value = true;
       return;
     }
@@ -78,10 +79,10 @@ const submit = async () => {
   }
 
   try {
+    const accessToken = localStorage.getItem('accessToken') || ''
     for (const batch of form.batches) {
-      const accessToken = localStorage.getItem('accessToken') || ''
       const payload = {
-        variantId: batch.product_id,
+        variantId: batch.variant_id,
         productId: batch.product_id,
         warehouseId: form.warehouse_id,
         quantityTotal: batch.quantity,
@@ -91,15 +92,9 @@ const submit = async () => {
         expiryDate: batch.expiry_date || null,
       };
 
-      await api.post(
-        '/batches',
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`
-          }
-        }
-      );
+      await api.post('/batches', payload, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
     }
 
     formMessage.value = 'Các batch đã được tạo thành công!';
@@ -188,9 +183,12 @@ const submit = async () => {
 
           <BaseDivider />
 
-          <!-- Lots information -->
           <FormField label="Mã sản phẩm">
             <FormControl v-model="batch.product_id" placeholder="ID sản phẩm" />
+          </FormField>
+
+          <FormField label="Variant ID">
+            <FormControl v-model="batch.variant_id" placeholder="Variant ID" />
           </FormField>
 
           <FormField label="Tên sản phẩm">

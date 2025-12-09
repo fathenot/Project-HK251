@@ -1,24 +1,40 @@
 <script setup>
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import { mdiAccount, mdiAsterisk } from '@mdi/js'
+
 import logo from '@/assets/logo.png'
+import { useMainStore } from '@/stores/main'
+
+import LayoutGuest from '@/layouts/LayoutGuest.vue'
 import SectionFullScreen from '@/components/SectionFullScreen.vue'
 import CardBox from '@/components/CardBox.vue'
+import CardBoxModal from '@/components/CardBoxModal.vue'
 import FormField from '@/components/FormField.vue'
 import FormControl from '@/components/FormControl.vue'
 import BaseButton from '@/components/BaseButton.vue'
-import LayoutGuest from '@/layouts/LayoutGuest.vue'
-import { mdiAccount, mdiAsterisk } from '@mdi/js'
-import { useMainStore } from '@/stores/main'
 
 const router = useRouter()
 const mainStore = useMainStore()
 
+/* Modal */
+const modalActive = ref(false)
+const modalTitle = ref('Thông báo')
+const modalMessage = ref('')
+
+const showModal = (title, message) => {
+  modalTitle.value = title
+  modalMessage.value = message
+  modalActive.value = true
+}
+
+/* Form */
 const form = reactive({
   username: '',
   password: '',
 })
 
+/* Submit */
 const submit = async () => {
   try {
     const success = await mainStore.login(form.username, form.password)
@@ -38,13 +54,14 @@ const submit = async () => {
           router.push('/warehouse-dashboard')
           break
         case 'customer':
-          router.push('/customer-dashboard')
-          break
         default:
           router.push('/customer-dashboard')
       }
+    } else {
+      showModal('Lỗi', 'Tên đăng nhập hoặc mật khẩu không đúng!')
     }
   } catch (error) {
+    showModal('Lỗi', 'Đã có lỗi xảy ra, vui lòng thử lại!')
     console.error(error)
   }
 }
@@ -54,17 +71,21 @@ const submit = async () => {
   <LayoutGuest>
     <SectionFullScreen bg="softBlue">
       <CardBox
-        :class="`w-11/12 rounded-xl bg-white/90 p-4 shadow-lg transition-shadow duration-300 hover:shadow-2xl sm:w-8/12 md:w-6/12 lg:w-5/12 xl:w-3/12 dark:bg-slate-900/80`"
         is-form
         @submit.prevent="submit"
+        class="w-11/12 rounded-xl bg-white/90 p-4 shadow-lg transition-shadow duration-300 hover:shadow-2xl sm:w-8/12 md:w-6/12 lg:w-5/12 xl:w-3/12 dark:bg-slate-900/80"
       >
+        <!-- Logo -->
         <div class="mb-4 flex justify-center">
           <img :src="logo" alt="Logo" class="h-30 w-auto" />
         </div>
+
+        <!-- Title -->
         <h2 class="mb-6 text-center text-2xl font-bold text-gray-800 md:text-3xl dark:text-white">
           Đăng nhập
         </h2>
 
+        <!-- Username -->
         <FormField label="Tên đăng nhập" help="Nhập tên đăng nhập hoặc email">
           <FormControl
             v-model="form.username"
@@ -74,6 +95,7 @@ const submit = async () => {
           />
         </FormField>
 
+        <!-- Password -->
         <FormField label="Mật khẩu" help="Nhập mật khẩu tài khoản">
           <FormControl
             v-model="form.password"
@@ -84,17 +106,17 @@ const submit = async () => {
           />
         </FormField>
 
+        <!-- Forgot password -->
         <div class="-mt-8 mb-4 text-right">
-          <!-- <RouterLink to="/reset-password" class="text-sm text-blue-500 hover:underline">
-            Quên mật khẩu?
-          </RouterLink> -->
-          <span class="text-sm text-blue-500 hover:underline">Quên mật khẩu?</span>
+          <span class="text-sm text-blue-500 hover:underline"> Quên mật khẩu? </span>
         </div>
 
+        <!-- Submit -->
         <div class="flex justify-center">
           <BaseButton type="submit" color="info" label="Đăng nhập" class="w-full" />
         </div>
 
+        <!-- Footer -->
         <template #footer>
           <div class="text-center">
             <p class="text-sm text-gray-800 dark:text-white">
@@ -106,6 +128,11 @@ const submit = async () => {
           </div>
         </template>
       </CardBox>
+
+      <!-- Modal -->
+      <CardBoxModal v-model="modalActive" :title="modalTitle" button="OK" button-label="Đóng">
+        <p>{{ modalMessage }}</p>
+      </CardBoxModal>
     </SectionFullScreen>
   </LayoutGuest>
 </template>

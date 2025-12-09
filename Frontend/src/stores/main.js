@@ -6,6 +6,8 @@ import { api } from '@/plugins/axios.js'
 export const useMainStore = defineStore('main', () => {
   const savedUser = JSON.parse(localStorage.getItem('user') || '{}')
 
+  const userId = ref(savedUser.id || null)
+  const userType = ref(savedUser.userType || '')
   const role = ref(savedUser.role || '')
   const userName = ref(savedUser.name || '')
   const userEmail = ref(savedUser.email || '')
@@ -24,6 +26,8 @@ export const useMainStore = defineStore('main', () => {
 
   function saveToLocalStorage() {
     const userData = {
+      id: userId.value,
+      userType: userType.value,
       role: role.value,
       name: userName.value,
       email: userEmail.value,
@@ -40,12 +44,14 @@ export const useMainStore = defineStore('main', () => {
   function setUser(data) {
     const user = data.user
 
-    role.value = (user.employee_type || 'customer').toLowerCase()
+    userId.value = user.id
+    userType.value = data.userType.toLowerCase()
+    role.value = data.userType === 'EMPLOYEE' ? user.employee_type.toLowerCase() : 'customer'
     userName.value = `${user.first_name} ${user.last_name}`
-    userEmail.value = user.email
-    userPhone.value = user.phone
-    userAddress.value = user.address
-    hiredDate.value = user.hired_at
+    userEmail.value = user.email || ''
+    userPhone.value = user.phone || ''
+    userAddress.value = user.address || ''
+    hiredDate.value = user.hired_at || ''
     points.value = user.loyalty_points || 0
 
     accessToken.value = data.accessToken
@@ -63,7 +69,7 @@ export const useMainStore = defineStore('main', () => {
           password,
         }
       )
-      console.log(response.data)
+
       if (response.data?.success) {
         setUser(response.data.data)
         return true
@@ -78,11 +84,14 @@ export const useMainStore = defineStore('main', () => {
   }
 
   function logout() {
+    userId.value = null
+    userType.value = ''
     role.value = ''
     userName.value = ''
     userEmail.value = ''
     userPhone.value = ''
     userAddress.value = ''
+    hiredDate.value = ''
     points.value = 0
     accessToken.value = ''
     refreshToken.value = ''
@@ -105,16 +114,20 @@ export const useMainStore = defineStore('main', () => {
   async function refreshAccessToken() {
     if (!refreshToken.value) throw new Error('No refresh token available')
     try {
-      const res = await api.post('/auth/refresh', {
-        refreshToken: refreshToken.value,
-      })
+      const res = await api.post(
+        '/auth/refresh',
+        { refreshToken: refreshToken.value, }
+      )
+
       if (res.data?.success) {
         accessToken.value = res.data.data.accessToken
         refreshToken.value = res.data.data.refreshToken
         saveToLocalStorage()
         return true
       }
-      return false
+      else {
+        return false
+      }
     } catch (err) {
       console.error('Refresh token failed', err)
       logout()
@@ -123,6 +136,8 @@ export const useMainStore = defineStore('main', () => {
   }
 
   return {
+    userId,
+    userType,
     role,
     userName,
     userEmail,

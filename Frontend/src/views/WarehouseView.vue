@@ -18,8 +18,7 @@ import CardBoxWidget from '@/components/CardBoxWidget.vue'
 import CardBox from '@/components/CardBox.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import LayoutAuthenticated from '@/layouts/LayoutAuthenticated.vue'
-import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.vue'
-import SectionTitleLineWithoutButton from '@/components/SectionTitleLineWithoutButton.vue'
+import SectionTitleLine from '@/components/SectionTitleLine.vue'
 
 const chartData = ref(null)
 
@@ -30,12 +29,10 @@ const dashboardData = ref({
   canhBao: 0,
 })
 
-// Lấy header token
 const getTokenHeader = () => ({
   Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
 })
 
-// Mock chart data nếu backend chưa có
 const getTestChartData = () => ({
   labels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7'],
   datasets: [
@@ -56,47 +53,38 @@ const getTestChartData = () => ({
   ],
 })
 
-// Lấy dữ liệu dashboard
 const fetchDashboard = async () => {
-  const today = new Date().toISOString().slice(0, 10)
   try {
-    // Nhập - xuất kho hôm nay
-    const ordersRes = await api.get('/orders/statistics', {
-      headers: getTokenHeader(),
-      params: { fromDate: today, toDate: today },
-    })
-    const stats = ordersRes.data.data || {}
-    dashboardData.value.nhapHomNay = stats.in || 0
-    dashboardData.value.xuatHomNay = stats.out || 0
-
-    // Tổng tồn kho và cảnh báo
     const productsRes = await api.get('/products/low-stock', {
       headers: getTokenHeader(),
-      params: { threshold: 10, page: 0, size: 1000 },
     })
-    const products = productsRes.data.data.content || []
-    dashboardData.value.canhBao = products.length
-    dashboardData.value.tongTonKho = products.reduce((sum, p) => sum + (p.available_quantity || 0), 0)
+    const lowStockProducts = productsRes.data.data.content || []
+    dashboardData.value.canhBao = lowStockProducts.length
+    dashboardData.value.tongTonKho = lowStockProducts.reduce(
+      (sum, p) => sum + (p.available_quantity || 0),
+      0,
+    )
 
-    // Cảnh báo lô hết hạn
     const expiredRes = await api.get('/batches/expired', {
       headers: getTokenHeader(),
       params: { page: 0, size: 1000 },
     })
     const expiredBatches = expiredRes.data.data.content || []
     dashboardData.value.canhBao += expiredBatches.length
+
+    dashboardData.value.nhapHomNay = 0
+    dashboardData.value.xuatHomNay = 0
   } catch (err) {
     console.error('Lỗi load dashboard:', err)
     dashboardData.value = {
-      nhapHomNay: 120,
-      xuatHomNay: 85,
-      tongTonKho: 540,
-      canhBao: 5,
+      nhapHomNay: 0,
+      xuatHomNay: 0,
+      tongTonKho: 0,
+      canhBao: 0,
     }
   }
 }
 
-// Chart tuần (mock nếu chưa có API chart)
 const fetchChart = async () => {
   try {
     chartData.value = getTestChartData()
@@ -115,7 +103,7 @@ onMounted(() => {
 <template>
   <LayoutAuthenticated>
     <SectionMain>
-      <SectionTitleLineWithoutButton :icon="mdiChartTimelineVariant" title="Chung" main />
+      <SectionTitleLine :icon="mdiChartTimelineVariant" title="Chung" main :has-button="false" />
 
       <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <CardBoxWidget
@@ -147,9 +135,9 @@ onMounted(() => {
         />
       </div>
 
-      <SectionTitleLineWithButton :icon="mdiChartPie" title="Số liệu" main>
+      <SectionTitleLine :icon="mdiChartPie" title="Số liệu" main>
         <BaseButton :icon="mdiReload" color="whiteDark" @click="fetchChart" />
-      </SectionTitleLineWithButton>
+      </SectionTitleLine>
 
       <CardBox class="mb-6">
         <div v-if="chartData">
