@@ -1,23 +1,45 @@
-### Cách chạy frontend ###
-```
-cd Frontend
-npm install
-npm run dev   # chạy dev server
-npm run build # build production ra thư mục dist
-```
+# Supermarket Management System
 
-### Cách chạy code backend ###
-```cd Backend
-mvn clean package -DskipTests
-java -jar target/app.jar
-Mặc định backend chạy ở http://localhost:8080
-```
+A minimal system for managing supermarket operations including inventory,
+product management, and sales tracking.
 
-* Lưu ý trong trường hợp dùng windows thì chạy code như sau:
-```
-cd Backend
-.\mvnw.cmd spring-boot:run
-```
+This project was developed as part of a Software Engineering course.
 
-### Khi lấy source code thì nhớ lấy từ nhánh develop
-git clone -b develop git@github.com:fathenot/Project-HK251.git
+## Features
+
+- Product management
+- Inventory tracking
+- Sales recording
+- User management
+
+## Tech Stack
+
+Backend
+- Java
+- Spring Boot
+
+Frontend
+- HTML
+- CSS
+- Vue.js
+
+Database
+- MySQL
+
+## Architecture
+The system follows a typical full-stack web architecture:
+
+Vue.js Frontend → REST API → Service Layer → Repository → Database
+
+## Database
+
+Relational schema designed using MySQL with entities such as:
+
+Product, Inventory, Order, Customer.
+
+## How to Run
+
+1. Clone repository
+2. Configure MySQL database
+3. Update `application.properties`
+4. Run the Spring Boot application

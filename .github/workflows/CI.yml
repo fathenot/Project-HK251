@@ -18,11 +18,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'     # 🔥 nâng từ 17 lên 21
 
       - name: Cache Maven packages
         uses: actions/cache@v4
@@ -46,7 +46,7 @@ jobs:
   frontend-deploy:
     name: Frontend - Deploy to GitHub Pages
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # chỉ deploy frontend khi merge vào main branch
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout source
